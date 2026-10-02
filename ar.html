@@ -30,7 +30,7 @@
   .status[hidden] { display: none; }
   .msg { position: fixed; left: 12px; right: 12px; bottom: calc(110px + env(safe-area-inset-bottom)); z-index: 15; font-size: 18px; pointer-events: none; }
   .msg[hidden] { display: none; }
-  .settings { position: fixed; right: 12px; top: calc(60px + env(safe-area-inset-top)); z-index: 25; width: min(300px, calc(100vw - 24px)); display: grid; gap: 10px; }
+  .settings { position: fixed; right: 12px; top: calc(60px + env(safe-area-inset-top)); z-index: 25; width: min(300px, calc(100vw - 24px)); max-height: calc(100dvh - 80px); overflow-y: auto; display: grid; gap: 10px; }
   .settings[hidden] { display: none; }
   .toggles { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 14px; }
   .toggles label { display: flex; align-items: center; gap: 6px; }

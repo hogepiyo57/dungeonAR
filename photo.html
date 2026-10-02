@@ -12,23 +12,37 @@
 { "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js" } }
 </script>
 <style>
+  html, body { height: 100%; }
   body { display: flex; flex-direction: column; }
-  .stage { position: relative; width: 100%; max-width: 1100px; margin: 0 auto; }
-  .stage canvas { display: block; width: 100%; height: auto; background: #000; touch-action: none; }
-  .panel { width: 100%; max-width: 1100px; margin: 0 auto; padding: 12px 16px 24px; display: grid; gap: 12px; }
-  .bar { display: flex; align-items: center; justify-content: center; gap: 14px; }
-  .settings { display: grid; gap: 10px; grid-template-columns: 1fr 1fr; }
+  /* 写真は画面に収まる最大の大きさで表示（縦横比は保つ） */
+  .stage { position: relative; width: 100%; display: flex; justify-content: center; flex: none; }
+  .stage canvas {
+    display: block;
+    width: auto;
+    height: auto;
+    max-width: 100%;
+    max-height: calc(100dvh - 150px); /* 縦向き：下のシャッター列が必ず見えるように */
+    background: #000;
+    touch-action: none;
+  }
+  .panel { width: 100%; max-width: 1100px; margin: 0 auto; padding: 12px 16px 24px; display: grid; gap: 12px; align-content: start; }
+  .bar { display: flex; align-items: center; justify-content: center; gap: 14px; flex-wrap: wrap; }
+  .golem-bar[hidden] { display: none; }
+  .settings { display: grid; gap: 10px; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); min-width: 0; }
+  .settings select, .settings input[type="text"] { width: 100%; min-width: 0; }
   .settings .full { grid-column: 1 / -1; }
   .toggles { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 14px; }
   .toggles label { display: flex; align-items: center; gap: 6px; }
-  .golem-bar[hidden] { display: none; }
   .hint { color: var(--muted); font-size: 13px; text-align: center; margin: 0; }
-  @media (orientation: landscape) and (max-height: 600px) {
-    body { flex-direction: row; }
-    .stage { flex: 1; max-height: 100dvh; display: grid; place-items: center; }
-    .stage canvas { width: auto; height: 100dvh; max-width: 100%; object-fit: contain; }
-    .panel { width: 300px; flex: none; max-height: 100dvh; overflow-y: auto; }
-    .settings { grid-template-columns: 1fr; }
+
+  /* 横向き（タブレット・スマホ）：写真を左に画面の高さいっぱいで、操作パネルを右に並べる */
+  @media (orientation: landscape) {
+    html, body { overflow: hidden; }
+    body { flex-direction: row; height: 100dvh; }
+    .stage { flex: 1; min-width: 0; height: 100dvh; align-items: center; }
+    .stage canvas { max-height: 100dvh; }
+    .panel { width: 320px; flex: none; height: 100dvh; overflow-y: auto; overflow-x: hidden; padding: 12px; }
+    .settings { grid-template-columns: minmax(0, 1fr); }
   }
 </style>
 </head>
