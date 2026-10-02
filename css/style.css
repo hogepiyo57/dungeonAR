@@ -168,3 +168,26 @@ label.field input[type="text"], label.field select {
   padding: 8px;
 }
 input[type="range"] { width: 100%; accent-color: var(--accent); }
+
+/* インカメラ／アウトカメラの選択 */
+.camsel {
+  display: inline-flex;
+  border: 2px solid var(--win-line);
+  border-radius: 8px;
+  overflow: hidden;
+  background: #000;
+}
+.camsel button {
+  appearance: none;
+  font: inherit;
+  font-size: 14px;
+  color: var(--muted);
+  background: none;
+  border: 0;
+  padding: 8px 10px;
+  min-height: 40px;
+  cursor: pointer;
+}
+.camsel button + button { border-left: 2px solid #444; }
+.camsel button[aria-pressed="true"] { color: #000; background: var(--accent); }
+.camsel button:disabled { opacity: .5; }

@@ -22,7 +22,9 @@
   #ar { position: fixed; inset: 0; overflow: hidden; }
   .hud { position: fixed; left: 0; right: 0; z-index: 20; display: flex; justify-content: center; padding: 0 12px; pointer-events: none; }
   .hud > * { pointer-events: auto; }
-  .hud.top { top: calc(10px + env(safe-area-inset-top)); justify-content: flex-end; }
+  .hud.top { top: calc(10px + env(safe-area-inset-top)); justify-content: flex-end; gap: 8px; }
+  /* インカメラは鏡像で表示（映像と3Dを同じように反転） */
+  #ar.mirror video, #ar.mirror canvas { transform: scaleX(-1); }
   .hud.bottom { bottom: calc(16px + env(safe-area-inset-bottom)); align-items: center; gap: 14px; }
   .status { position: fixed; left: 50%; top: 30%; transform: translateX(-50%); z-index: 15; max-width: 90vw; text-align: center; pointer-events: none; }
   .status[hidden] { display: none; }
@@ -38,7 +40,13 @@
 <div id="ar"></div>
 
 <a class="btn back" href="index.html">◀ もどる</a>
-<div class="hud top"><button class="btn" id="toggleSettings" type="button">せってい</button></div>
+<div class="hud top">
+  <div class="camsel" id="camsel" role="group" aria-label="カメラ">
+    <button type="button" data-facing="user">イン</button>
+    <button type="button" data-facing="environment">アウト</button>
+  </div>
+  <button class="btn" id="toggleSettings" type="button">せってい</button>
+</div>
 
 <div class="win settings" id="settings" hidden>
   <label class="field">なまえ
@@ -79,7 +87,7 @@
 </div>
 
 <div class="overlay-msg" id="loading">
-  <div class="win"><h2>じゅんびちゅう…</h2><p>カメラとARを起動しています。カメラの許可を求められたら「許可」を押してください。</p></div>
+  <div class="win"><h2>じゅんびちゅう…</h2><p id="loadingText">カメラとARを起動しています。カメラの許可を求められたら「許可」を押してください。</p></div>
 </div>
 
 <div class="countdown" id="countdown" hidden></div>

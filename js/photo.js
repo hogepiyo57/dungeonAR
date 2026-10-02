@@ -2,6 +2,7 @@
 import { FilesetResolver, ImageSegmenter } from 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/vision_bundle.mjs';
 import {
   MESSAGES, fillMessage, drawRpgHud, ensureFont, countdown, flash, showResult, showError, cameraErrorText,
+  initialFacing, rememberFacing, bindCameraSelect,
 } from './rpg.js';
 
 const WASM_URL = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm';
@@ -22,7 +23,7 @@ const ui = {
 };
 
 const state = {
-  facing: 'user',
+  facing: initialFacing('photo', 'user'),
   stream: null,
   msgIndex: 0,
   cx: W * 0.3,       // 人物の中心X
@@ -267,9 +268,17 @@ function newEmber(anyY) {
 }
 
 // ---------- 操作 ----------
-$('flip').addEventListener('click', async () => {
-  state.facing = state.facing === 'user' ? 'environment' : 'user';
-  try { await startCamera(); } catch (err) { alert(cameraErrorText(err)); }
+bindCameraSelect($('camsel'), state.facing, async (facing) => {
+  const prev = state.facing;
+  state.facing = facing;
+  try {
+    await startCamera();
+  } catch (err) {
+    state.facing = prev;
+    await startCamera().catch(() => {});
+    throw err;
+  }
+  rememberFacing('photo', facing);
 });
 
 $('msgNext').addEventListener('click', () => {

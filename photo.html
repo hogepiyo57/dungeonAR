@@ -35,7 +35,10 @@
 
 <div class="panel">
   <div class="bar">
-    <button class="btn" id="flip" type="button">カメラ切替</button>
+    <div class="camsel" id="camsel" role="group" aria-label="カメラ">
+      <button type="button" data-facing="user">イン</button>
+      <button type="button" data-facing="environment">アウト</button>
+    </div>
     <button class="shutter" id="shoot" type="button" aria-label="撮影" disabled></button>
     <button class="btn" id="msgNext" type="button">セリフ変更</button>
   </div>

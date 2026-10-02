@@ -169,3 +169,39 @@ export function cameraErrorText(err) {
   if (err && err.name === 'NotFoundError') return 'カメラが見つかりませんでした。';
   return `カメラを起動できませんでした（${err && err.message ? err.message : err}）。`;
 }
+
+// ---------- カメラ選択（インカメラ user ／ アウトカメラ environment） ----------
+// 優先順位：URLの ?camera=user|environment → 前回の選択 → ページごとの既定値
+export function initialFacing(pageKey, fallback) {
+  const q = new URLSearchParams(location.search).get('camera');
+  if (q === 'user' || q === 'environment') return q;
+  try {
+    const saved = localStorage.getItem(`dungeonAR.camera.${pageKey}`);
+    if (saved === 'user' || saved === 'environment') return saved;
+  } catch { /* 保存できない環境では既定値 */ }
+  return fallback;
+}
+
+export function rememberFacing(pageKey, facing) {
+  try { localStorage.setItem(`dungeonAR.camera.${pageKey}`, facing); } catch { /* 無視 */ }
+}
+
+// .camsel 内の [data-facing] ボタンを選択式にする。onChange は Promise を返してよい
+export function bindCameraSelect(root, current, onChange) {
+  const buttons = [...root.querySelectorAll('[data-facing]')];
+  const paint = (f) => buttons.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.facing === f)));
+  paint(current);
+  buttons.forEach((b) => b.addEventListener('click', async () => {
+    const next = b.dataset.facing;
+    if (next === current) return;
+    buttons.forEach((x) => { x.disabled = true; });
+    try {
+      await onChange(next);
+      current = next;
+    } catch (err) {
+      alert(cameraErrorText(err));
+    }
+    paint(current);
+    buttons.forEach((x) => { x.disabled = false; });
+  }));
+}

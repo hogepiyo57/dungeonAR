@@ -4,6 +4,7 @@ import { MindARThree } from 'mindar-image-three';
 import { createGolem, createChest, createEmbers } from './golem.js';
 import {
   MESSAGES, fillMessage, drawRpgHud, ensureFont, countdown, flash, showResult, showError, cameraErrorText,
+  initialFacing, rememberFacing, bindCameraSelect,
 } from './rpg.js';
 
 const $ = (id) => document.getElementById(id);
@@ -27,6 +28,8 @@ const mindar = new MindARThree({
   missTolerance: 10,
 });
 const { renderer, scene, camera } = mindar;
+let facing = initialFacing('ar', 'environment');
+mindar.shouldFaceUser = facing === 'user';
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 const anchor = mindar.addAnchor(0);
 
@@ -141,13 +144,18 @@ function capture() {
   const ctx = out.getContext('2d');
 
   // カメラ映像（画面に表示されている範囲と同じ切り取り）
+  // インカメラは画面と同じ鏡像にする
+  ctx.save();
+  if (facing === 'user') { ctx.translate(out.width, 0); ctx.scale(-1, 1); }
   const video = mindar.video;
-  const vr = video.getBoundingClientRect();
-  ctx.drawImage(video, (vr.left - cr.left) * scale, (vr.top - cr.top) * scale, vr.width * scale, vr.height * scale);
+  const vw = video.offsetWidth, vh = video.offsetHeight;
+  const vx = (cr.width - vw) / 2, vy = (cr.height - vh) / 2;
+  ctx.drawImage(video, vx * scale, vy * scale, vw * scale, vh * scale);
 
   // 3D（描画直後ならバッファが残っている）
   renderer.render(scene, camera);
   ctx.drawImage(renderer.domElement, 0, 0, out.width, out.height);
+  ctx.restore();
 
   if (ui.hud.checked) {
     drawRpgHud(ctx, out.width, out.height, {
@@ -187,13 +195,48 @@ $('msgNext').addEventListener('click', () => {
 });
 
 ui.hud.addEventListener('change', () => { $('msg').hidden = !ui.hud.checked || !everFound; });
+// カメラの切替：ARを止めて、選んだカメラで起動しなおす
+bindCameraSelect($('camsel'), facing, async (next) => {
+  const loading = $('loading');
+  $('loadingText').textContent = 'カメラを切り替えています…';
+  loading.hidden = false;
+  mindar.stop();
+  resetTracking();
+  try {
+    await startAR(next);
+  } catch (err) {
+    await startAR(facing).catch(() => {});
+    throw err || new Error('camera');
+  } finally {
+    loading.hidden = true;
+  }
+  facing = next;
+  rememberFacing('ar', next);
+});
+
+async function startAR(f) {
+  mindar.shouldFaceUser = f === 'user';
+  container.classList.toggle('mirror', f === 'user');
+  await mindar.start();
+}
+
+// 切替後はもう一度ポスターを認識して、ゴーレムを登場させなおす
+function resetTracking() {
+  everFound = false;
+  anchor.visible = false; // MindAR は停止しても認識中フラグを戻さないため
+  world.visible = false;
+  $('status').hidden = false;
+  $('msg').hidden = true;
+  $('shoot').disabled = true;
+}
+
 $('toggleSettings').addEventListener('click', () => { $('settings').hidden = !$('settings').hidden; });
 
 // ---------- 起動 ----------
 (async () => {
   try {
     await ensureFont();
-    await mindar.start();
+    await startAR(facing);
   } catch (err) {
     console.error(err);
     showError($('loading'), 'ARを起動できません', cameraErrorText(err));
