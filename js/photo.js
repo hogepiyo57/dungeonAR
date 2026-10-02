@@ -14,13 +14,23 @@ const ctx = view.getContext('2d');
 const W = view.width, H = view.height;
 const video = $('video');
 
+// 背景：ゴーレムの間＝参考画像そのまま／大広間＝ゴーレムのいない部分を左右対称にした画像＋3Dゴーレム
+const SCENES = {
+  golem: 'assets/dungeon.jpg',
+  hall: 'assets/dungeon-hall.jpg',
+};
+
 // 参考画像内のゴーレムの目の位置（1536x1024基準）
 const EYES = [[1030, 238], [1076, 238]];
 
 const ui = {
   name: $('name'), scale: $('scale'), timer: $('timer'),
   pixel: $('pixel'), hudStatus: $('hudStatus'), hudMessage: $('hudMessage'), embers: $('embers'),
+  scene: $('scene'), chest: $('chest'),
 };
+
+const sceneParam = new URLSearchParams(location.search).get('scene');
+if (sceneParam in SCENES) ui.scene.value = sceneParam;
 
 const state = {
   facing: initialFacing('photo', 'user'),
@@ -43,14 +53,38 @@ const pCtx = person.getContext('2d');
 const pixelCv = document.createElement('canvas'); // ドット絵化用
 const pxCtx = pixelCv.getContext('2d');
 
-const bg = new Image();
-const bgLoaded = new Promise((resolve, reject) => { bg.onload = resolve; bg.onerror = reject; });
-bg.src = 'assets/dungeon.jpg';
+let bg = new Image();
+let hall = null;       // 3Dゴーレム（大広間のときだけ読み込む）
+let shake = 0;         // こうげき時の画面ゆれ
+
+function loadImage(src) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = reject;
+    img.src = src;
+  });
+}
+
+async function applyScene() {
+  const name = ui.scene.value;
+  bg = await loadImage(SCENES[name]);
+  $('golemBar').hidden = name !== 'hall';
+  if (name === 'hall') {
+    if (!hall) {
+      const { createHallGolem } = await import('./hall3d.js');
+      hall = createHallGolem();
+    }
+    hall.setChest(ui.chest.checked);
+    hall.appear();
+    state.msgIndex = 0;
+  }
+}
 
 // ---------- 初期化 ----------
 async function init() {
   try {
-    await Promise.all([bgLoaded, ensureFont()]);
+    await Promise.all([applyScene(), ensureFont()]);
     await startCamera();
   } catch (err) {
     showError($('loading'), 'カメラを起動できません', cameraErrorText(err));
@@ -179,10 +213,29 @@ function personRect() {
 function render(t, dt) {
   ctx.globalCompositeOperation = 'source-over';
   ctx.imageSmoothingEnabled = true;
-  ctx.drawImage(bg, 0, 0, W, H);
-
-  // ゴーレムの目を明滅させる
+  const useHall = ui.scene.value === 'hall' && hall;
   ctx.save();
+  if (shake > 0) {
+    shake = Math.max(0, shake - dt);
+    ctx.translate(Math.sin(t * 90) * 14 * shake / 0.35, Math.cos(t * 70) * 10 * shake / 0.35);
+  }
+  ctx.drawImage(bg, -16, -16, W + 32, H + 32);
+
+  if (useHall) {
+    // 3Dゴーレム（背景と人物のあいだ）
+    hall.lookAtPerson(state.cx / W);
+    hall.render(dt);
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(hall.canvas, 0, 0, W, H);
+    ctx.imageSmoothingEnabled = true;
+    const p = hall.attackPhase();
+    if (p > 0.55 && p < 0.6 && shake === 0) shake = 0.35;
+  }
+  ctx.restore();
+
+  // ゴーレムの目を明滅させる（絵のゴーレムのとき）
+  ctx.save();
+  if (useHall) ctx.globalAlpha = 0;
   ctx.globalCompositeOperation = 'lighter';
   const pulse = 0.55 + Math.sin(t * 3) * 0.35;
   for (const [ex, ey] of EYES) {
@@ -279,6 +332,21 @@ bindCameraSelect($('camsel'), state.facing, async (facing) => {
     throw err;
   }
   rememberFacing('photo', facing);
+});
+
+ui.scene.addEventListener('change', () => { applyScene().catch((err) => console.error(err)); });
+ui.chest.addEventListener('change', () => { if (hall) hall.setChest(ui.chest.checked); });
+$('summon').addEventListener('click', () => {
+  if (!hall) return;
+  hall.appear();
+  state.msgIndex = 0;
+  ui.hudMessage.checked = true;
+});
+$('attack').addEventListener('click', () => {
+  if (!hall) return;
+  hall.attack();
+  state.msgIndex = 2;
+  ui.hudMessage.checked = true;
 });
 
 $('msgNext').addEventListener('click', () => {
