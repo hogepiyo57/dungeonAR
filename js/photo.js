@@ -73,6 +73,7 @@ const maskCtx = maskCv.getContext('2d');
 const person = document.createElement('canvas');  // 切り抜いた人物
 const pCtx = person.getContext('2d');
 const pixelCv = document.createElement('canvas'); // ドット絵化用
+const PIXEL_LEVELS = ['0', '7', '10', '14']; // なし／ふつう／粗い／とても粗い（1ドットの大きさ px）
 const pxCtx = pixelCv.getContext('2d');
 
 let bg = new Image();
@@ -332,9 +333,9 @@ function render(t, dt) {
     ctx.fillRect(state.cx - r.w * 0.4, state.bottom - r.w * 0.4, r.w * 0.8, r.w * 0.8);
     ctx.restore();
 
-    if (ui.pixel.checked) {
+    const block = parseInt(ui.pixel.value, 10);
+    if (block > 0) {
       // ドット絵化：縮小してから拡大（ぼかしなし）
-      const block = 7;
       const pw = Math.max(1, Math.round(r.w / block)), ph = Math.max(1, Math.round(r.h / block));
       if (pixelCv.width !== pw || pixelCv.height !== ph) { pixelCv.width = pw; pixelCv.height = ph; }
       pxCtx.clearRect(0, 0, pw, ph);
@@ -392,6 +393,15 @@ function render(t, dt) {
     messageTop: !!SCENES[ui.scene.value].messageTop,
   });
 }
+
+// ドット絵化の粗さは端末に記憶する
+try {
+  const saved = localStorage.getItem('dungeonAR.pixel');
+  if (PIXEL_LEVELS.includes(saved)) ui.pixel.value = saved;
+} catch { /* 保存できない環境では既定値 */ }
+ui.pixel.addEventListener('change', () => {
+  try { localStorage.setItem('dungeonAR.pixel', ui.pixel.value); } catch { /* 無視 */ }
+});
 
 // 戦闘画面のてき（名前が空の行は出さない）
 const enemyRows = [...document.querySelectorAll('#battleFields .enemy-row')];
