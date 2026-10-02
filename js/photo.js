@@ -31,6 +31,12 @@ const SCENES = {
       'ふしぎな ひかりが {name}を つつみこんだ…',
     ],
   },
+  // 戦闘画面：自分がモンスターとして中央に立つ。ウィンドウは battle.js で描く
+  battle: {
+    src: 'assets/battle.jpg', w: 1536, h: 1024,
+    person: { cx: 768, bottom: 790, scale: 0.55 },
+    hud: 'battle',
+  },
   hall: { src: 'assets/dungeon-hall.jpg', w: 1536, h: 1024, person: { cx: 460, bottom: 1045, scale: 1 } },
   golem: { src: 'assets/dungeon.jpg', w: 1536, h: 1024, person: { cx: 460, bottom: 1045, scale: 1 } },
 };
@@ -72,6 +78,7 @@ const pxCtx = pixelCv.getContext('2d');
 let bg = new Image();
 let hall = null;       // 3Dゴーレム（大広間のときだけ読み込む）
 let magic = null;      // 魔法陣の発光（魔法陣の間のときだけ読み込む）
+let battle = null;     // 戦闘画面のウィンドウ（戦闘画面のときだけ読み込む）
 
 // 魔法陣の色：URLの ?color= → 前回の選択 → 青
 const COLORS = ['blue', 'red', 'green', 'purple', 'gold'];
@@ -109,7 +116,10 @@ async function applyScene() {
     const { createMagicCircle } = await import('./magic.js');
     magic = await createMagicCircle(bg, magicColor);
   }
+  if (name === 'battle' && !battle) battle = await import('./battle.js');
   $('magicBar').hidden = name !== 'magic';
+  $('battleFields').hidden = name !== 'battle';
+  $('msgNext').hidden = name === 'battle';
   paintSwatches();
   // キャンバスの大きさを背景に合わせ、人物を初期位置へ
   view.width = W = sc.w;
@@ -363,6 +373,17 @@ function render(t, dt) {
   ctx.fillStyle = vg;
   ctx.fillRect(0, 0, W, H);
 
+  if (SCENES[ui.scene.value].hud === 'battle' && battle) {
+    battle.drawBattleHud(ctx, {
+      leader: ui.name.value.trim(),
+      enemies: readEnemies(),
+      showParty: ui.hudStatus.checked,
+      showBottom: ui.hudMessage.checked,
+      cursorOn: dt === 0 || Math.floor(t * 2) % 2 === 0, // 撮影時は必ず表示
+    });
+    return;
+  }
+
   drawRpgHud(ctx, W, H, {
     name: ui.name.value.trim(),
     message: fillMessage(sceneMessages()[state.msgIndex % sceneMessages().length], ui.name.value.trim()),
@@ -370,6 +391,22 @@ function render(t, dt) {
     showMessage: ui.hudMessage.checked,
     messageTop: !!SCENES[ui.scene.value].messageTop,
   });
+}
+
+// 戦闘画面のてき（名前が空の行は出さない）
+const enemyRows = [...document.querySelectorAll('#battleFields .enemy-row')];
+enemyRows.forEach((row, i) => {
+  const sel = row.querySelector('.enemy-count');
+  for (let n = 1; n <= 9; n++) sel.add(new Option(String(n), String(n)));
+  sel.value = String(i + 1 <= 2 ? i + 1 : 1);
+});
+function readEnemies() {
+  return enemyRows
+    .map((row) => ({
+      name: row.querySelector('.enemy-name').value.trim(),
+      count: parseInt(row.querySelector('.enemy-count').value, 10),
+    }))
+    .filter((e) => e.name);
 }
 
 function newEmber(anyY) {

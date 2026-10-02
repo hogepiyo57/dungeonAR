@@ -27,7 +27,14 @@
   }
   .panel { width: 100%; max-width: 1100px; margin: 0 auto; padding: 12px 16px 24px; display: grid; gap: 12px; align-content: start; }
   .bar { display: flex; align-items: center; justify-content: center; gap: 14px; flex-wrap: wrap; }
-  .golem-bar[hidden], .magic-bar[hidden] { display: none; }
+  .golem-bar[hidden], .magic-bar[hidden], .battle-fields[hidden] { display: none; }
+  /* 戦闘画面のてき入力 */
+  .battle-fields { display: grid; gap: 6px; }
+  .enemy-row { display: grid; grid-template-columns: minmax(0, 1fr) 96px; gap: 6px; }
+  .enemy-row input, .enemy-row select {
+    font: inherit; font-size: 16px; color: var(--text); background: #111;
+    border: 2px solid #666; border-radius: 6px; padding: 8px; min-width: 0; width: 100%;
+  }
   /* 魔法陣の色ボタン */
   .magic-bar { gap: 10px; }
   .magic-bar .label { font-size: 14px; color: var(--muted); }
@@ -91,9 +98,25 @@
       <select id="scene">
         <option value="hall">大広間（3Dゴーレムが出現）</option>
         <option value="magic">魔法陣の間（光る魔法陣の上に立つ）</option>
+        <option value="battle">戦闘画面（自分がモンスターになる）</option>
         <option value="golem">ゴーレムの間（絵のゴーレム）</option>
       </select>
     </label>
+    <div class="full battle-fields" id="battleFields" hidden>
+      <div class="field">てき（名前と数。空欄の行は表示しません）</div>
+      <div class="enemy-row">
+        <input type="text" class="enemy-name" maxlength="10" value="てきA" aria-label="てき1の名前">
+        <select class="enemy-count" aria-label="てき1の数"></select>
+      </div>
+      <div class="enemy-row">
+        <input type="text" class="enemy-name" maxlength="10" value="てきB" aria-label="てき2の名前">
+        <select class="enemy-count" aria-label="てき2の数"></select>
+      </div>
+      <div class="enemy-row">
+        <input type="text" class="enemy-name" maxlength="10" value="" placeholder="（なし）" aria-label="てき3の名前">
+        <select class="enemy-count" aria-label="てき3の数"></select>
+      </div>
+    </div>
     <label class="field">大きさ
       <input type="range" id="scale" min="0.4" max="1.6" step="0.01" value="1">
     </label>
