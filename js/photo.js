@@ -24,7 +24,7 @@ const SCENES = {
     person: { cx: 640, bottom: 850, scale: 0.68 },
     messageTop: true, // 足元の魔法陣を隠さない
     messages: [
-      '{name}は まほうじんの うえに たった！',
+      '{name}は　かえんまほうをつかった！',
       'まほうじんが あおく かがやきだした！',
       '{name}は あたらしい ちからに めざめた！',
       '{name}は ゆうしゃに えらばれた！',
