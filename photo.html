@@ -27,7 +27,9 @@
   }
   .panel { width: 100%; max-width: 1100px; margin: 0 auto; padding: 12px 16px 24px; display: grid; gap: 12px; align-content: start; }
   .bar { display: flex; align-items: center; justify-content: center; gap: 14px; flex-wrap: wrap; }
-  .golem-bar[hidden], .magic-bar[hidden], .battle-fields[hidden], #nameField[hidden] { display: none; }
+  .golem-bar[hidden], .battle-fields[hidden], #nameField[hidden] { display: none; }
+  #autoFit { font-size: 14px; min-height: 36px; padding: 6px 12px; }
+  #autoFit[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }
   /* 戦闘画面のてき入力 */
   .battle-fields { display: grid; gap: 6px; }
   .enemy-row { display: grid; grid-template-columns: minmax(0, 1fr) 96px; gap: 6px; }
@@ -35,15 +37,6 @@
     font: inherit; font-size: 16px; color: var(--text); background: #111;
     border: 2px solid #666; border-radius: 6px; padding: 8px; min-width: 0; width: 100%;
   }
-  /* 魔法陣の色ボタン */
-  .magic-bar { gap: 10px; }
-  .magic-bar .label { font-size: 14px; color: var(--muted); }
-  .swatch {
-    width: 40px; height: 40px; border-radius: 50%;
-    border: 3px solid #000; box-shadow: 0 0 0 2px #666;
-    cursor: pointer; padding: 0;
-  }
-  .swatch[aria-pressed="true"] { box-shadow: 0 0 0 3px #fff, 0 0 14px 4px var(--glow); }
   .settings { display: grid; gap: 10px; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); min-width: 0; }
   .settings select, .settings input[type="text"] { width: 100%; min-width: 0; }
   .settings .full { grid-column: 1 / -1; }
@@ -76,19 +69,12 @@
     <button class="shutter" id="shoot" type="button" aria-label="撮影" disabled></button>
     <button class="btn" id="msgNext" type="button">セリフ変更</button>
   </div>
-  <div class="bar magic-bar" id="magicBar" role="group" aria-label="魔法陣の色" hidden>
-    <span class="label">魔法陣の色</span>
-    <button class="swatch" type="button" data-color="blue" aria-label="青" style="background:#4f8cff;--glow:#4f8cff"></button>
-    <button class="swatch" type="button" data-color="red" aria-label="赤" style="background:#ff5a24;--glow:#ff5a24"></button>
-    <button class="swatch" type="button" data-color="green" aria-label="緑" style="background:#2fdc6e;--glow:#2fdc6e"></button>
-    <button class="swatch" type="button" data-color="purple" aria-label="紫" style="background:#9a5cff;--glow:#9a5cff"></button>
-    <button class="swatch" type="button" data-color="gold" aria-label="金" style="background:#ffc63a;--glow:#ffc63a"></button>
-  </div>
   <div class="bar golem-bar" id="golemBar" hidden>
     <button class="btn primary" id="summon" type="button">しょうかん</button>
     <button class="btn" id="attack" type="button">こうげき</button>
   </div>
-  <p class="hint"><a href="index.html">◀ もどる</a>　画面をドラッグで人物の位置、ピンチまたは「大きさ」で拡大・縮小</p>
+  <div class="bar"><button class="btn" id="autoFit" type="button" aria-pressed="true">立ち位置：自動</button></div>
+  <p class="hint"><a href="index.html">◀ もどる</a>　人物は自動で立ち位置に合わせます。画面をドラッグすると手動で動かせます（ピンチまたは「大きさ」で拡大・縮小）</p>
 
   <div class="settings win">
     <label class="field full" id="nameField">なまえ（ステータスとセリフに入ります）
@@ -140,6 +126,7 @@
       <label><input type="checkbox" id="hudMessage" checked> メッセージ</label>
       <label><input type="checkbox" id="embers" checked> 光の粒・火の粉</label>
       <label><input type="checkbox" id="chest" checked> 宝箱</label>
+      <label><input type="checkbox" id="sound" checked> おと</label>
     </div>
   </div>
 </div>
@@ -162,6 +149,6 @@
 </div>
 
 <video id="video" playsinline muted autoplay style="position:fixed;left:0;top:0;width:2px;height:2px;opacity:0;pointer-events:none"></video>
-<script type="module" src="js/photo.js"></script>
+<script type="module" src="js/pages/photo.js"></script>
 </body>
 </html>

@@ -1,6 +1,6 @@
 // 大広間の背景画像に重ねる3Dゴーレム（カメラ映像ではなく、画面内の背景にARのように出現させる）
 import * as THREE from 'three';
-import { createGolem, createChest } from './golem.js';
+import { createGolem, createChest } from '../models/golem.js';
 
 // 低解像度で描いてから拡大し、背景のドット絵になじませる
 const RW = 768, RH = 512;

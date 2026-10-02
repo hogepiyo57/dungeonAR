@@ -1,11 +1,11 @@
 // モードB：ポスター（ダンジョン画像）をカメラでうつすと、3Dのゴーレムが出現する
 import * as THREE from 'three';
 import { MindARThree } from 'mindar-image-three';
-import { createGolem, createChest, createEmbers } from './golem.js';
-import {
-  MESSAGES, fillMessage, drawRpgHud, ensureFont, countdown, flash, showResult, showError, cameraErrorText,
-  initialFacing, rememberFacing, bindCameraSelect,
-} from './rpg.js';
+import { createGolem, createChest, createEmbers } from '../models/golem.js';
+import { MESSAGES, fillMessage, drawRpgHud, drawStamp, ensureFont } from '../common/rpg-ui.js';
+import { countdown, flash, showResult } from '../common/capture.js';
+import { initialFacing, rememberFacing, bindCameraSelect, cameraErrorText, showError } from '../common/camera.js';
+import { play, bindSoundToggle } from '../common/sound.js';
 
 const $ = (id) => document.getElementById(id);
 const container = $('ar');
@@ -106,6 +106,7 @@ anchor.onTargetFound = () => {
     everFound = true;
     world.visible = true;
     golem.userData.appear();
+    play('summon');
     say(fillMessage(MESSAGES[0], playerName()));
     $('shoot').disabled = false;
   }
@@ -126,6 +127,7 @@ function tick() {
   const phase = golem.userData.attackPhase();
   if (phase > 0.55 && phase < 0.6 && performance.now() > shakeUntil) {
     shakeUntil = performance.now() + 400;
+    play('hit');
     container.animate(
       [{ transform: 'translate(0,0)' }, { transform: 'translate(-8px,6px)' }, { transform: 'translate(7px,-5px)' }, { transform: 'translate(0,0)' }],
       { duration: 300 }
@@ -165,6 +167,7 @@ function capture() {
       showMessage: true,
     });
   }
+  drawStamp(ctx, out.width, out.height, { corner: 'top' });
   return out;
 }
 
@@ -173,18 +176,26 @@ $('shoot').addEventListener('click', async () => {
   btn.disabled = true;
   const msg = $('msg');
   const msgWasHidden = msg.hidden;
-  await countdown($('countdown'), parseInt(ui.timer.value, 10));
+  await countdown($('countdown'), parseInt(ui.timer.value, 10), (n) => play('tick', n));
   msg.hidden = true;
   flash($('flash'));
+  play('shutter');
   const shot = capture();
   msg.hidden = msgWasHidden;
+  // 撮影結果を表示している間は、認識と3D描画を止める
+  renderer.setAnimationLoop(null);
+  mindar.controller.stopProcessVideo();
   await showResult($('result'), shot);
+  mindar.controller.processVideo(mindar.video);
+  clock.getDelta();
+  renderer.setAnimationLoop(tick);
   btn.disabled = false;
 });
 
 $('attack').addEventListener('click', () => {
   if (!everFound) return;
   golem.userData.attack();
+  play('swing');
   say(fillMessage(MESSAGES[2], playerName()));
 });
 
@@ -192,6 +203,7 @@ $('msgNext').addEventListener('click', () => {
   msgIndex = (msgIndex + 1) % MESSAGES.length;
   ui.hud.checked = true;
   say(fillMessage(MESSAGES[msgIndex], playerName()));
+  play('select');
 });
 
 ui.hud.addEventListener('change', () => { $('msg').hidden = !ui.hud.checked || !everFound; });
@@ -231,6 +243,7 @@ function resetTracking() {
 }
 
 $('toggleSettings').addEventListener('click', () => { $('settings').hidden = !$('settings').hidden; });
+bindSoundToggle($('sound'));
 
 // ---------- 起動 ----------
 (async () => {
