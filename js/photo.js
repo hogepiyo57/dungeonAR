@@ -72,6 +72,24 @@ const pxCtx = pixelCv.getContext('2d');
 let bg = new Image();
 let hall = null;       // 3Dゴーレム（大広間のときだけ読み込む）
 let magic = null;      // 魔法陣の発光（魔法陣の間のときだけ読み込む）
+
+// 魔法陣の色：URLの ?color= → 前回の選択 → 青
+const COLORS = ['blue', 'red', 'green', 'purple', 'gold'];
+let magicColor = (() => {
+  const q = new URLSearchParams(location.search).get('color');
+  if (COLORS.includes(q)) return q;
+  try {
+    const saved = localStorage.getItem('dungeonAR.magicColor');
+    if (COLORS.includes(saved)) return saved;
+  } catch { /* 保存できない環境では既定値 */ }
+  return 'blue';
+})();
+
+function paintSwatches() {
+  document.querySelectorAll('#magicBar [data-color]').forEach((b) => {
+    b.setAttribute('aria-pressed', String(b.dataset.color === magicColor));
+  });
+}
 let shake = 0;         // こうげき時の画面ゆれ
 
 function loadImage(src) {
@@ -89,8 +107,10 @@ async function applyScene() {
   bg = await loadImage(sc.src);
   if (name === 'magic' && !magic) {
     const { createMagicCircle } = await import('./magic.js');
-    magic = await createMagicCircle();
+    magic = await createMagicCircle(bg, magicColor);
   }
+  $('magicBar').hidden = name !== 'magic';
+  paintSwatches();
   // キャンバスの大きさを背景に合わせ、人物を初期位置へ
   view.width = W = sc.w;
   view.height = H = sc.h;
@@ -379,6 +399,18 @@ bindCameraSelect($('camsel'), state.facing, async (facing) => {
 
 ui.scene.addEventListener('change', () => { applyScene().catch((err) => console.error(err)); });
 ui.chest.addEventListener('change', () => { if (hall) hall.setChest(ui.chest.checked); });
+document.querySelectorAll('#magicBar [data-color]').forEach((b) => {
+  b.addEventListener('click', () => {
+    magicColor = b.dataset.color;
+    if (magic) {
+      magic.setColor(magicColor);
+      magic.flash(); // 色が切り替わった瞬間に一度強く光らせる
+    }
+    paintSwatches();
+    try { localStorage.setItem('dungeonAR.magicColor', magicColor); } catch { /* 無視 */ }
+  });
+});
+
 $('summon').addEventListener('click', () => {
   if (!hall) return;
   hall.appear();
