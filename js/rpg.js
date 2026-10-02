@@ -38,11 +38,13 @@ function roundRect(ctx, x, y, w, h, r) {
   ctx.closePath();
 }
 
-// 画面下部のメッセージウィンドウと左上のステータスウィンドウ
-export function drawRpgHud(ctx, W, H, { name, message, showStatus = true, showMessage = true, level = 1 }) {
+// 左上のステータスウィンドウと、メッセージウィンドウ（通常は画面下部）
+// messageTop: true のときはメッセージをステータスの右に置き、画面下部（足元）をあける
+export function drawRpgHud(ctx, W, H, { name, message, showStatus = true, showMessage = true, level = 1, messageTop = false }) {
   const unit = Math.min(W, H) / 70;
   ctx.save();
   ctx.textBaseline = 'top';
+  let statusRight = 0;
 
   if (showStatus) {
     const fs = unit * 2.6;
@@ -52,6 +54,7 @@ export function drawRpgHud(ctx, W, H, { name, message, showStatus = true, showMe
     const h = unit * 16.5;
     const x = unit * 2, y = unit * 2;
     drawWindow(ctx, x, y, w, h, unit);
+    statusRight = x + w;
     ctx.fillStyle = '#f4f4f4';
     ctx.fillText(label, x + unit * 2.4, y + unit * 1.8);
     ctx.fillStyle = '#ffb43a';
@@ -64,10 +67,11 @@ export function drawRpgHud(ctx, W, H, { name, message, showStatus = true, showMe
   if (showMessage && message) {
     const fs = unit * 3.1;
     ctx.font = `${fs}px ${FONT}`;
-    const x = unit * 2, w = W - unit * 4;
+    const x = messageTop && statusRight ? statusRight + unit * 1.5 : unit * 2;
+    const w = W - x - unit * 2;
     const lines = wrapText(ctx, message, w - unit * 6 - ctx.measureText('＊「」').width);
     const h = unit * 3.6 + lines.length * fs * 1.45 + unit * 1.4;
-    const y = H - h - unit * 2;
+    const y = messageTop ? unit * 2 : H - h - unit * 2;
     drawWindow(ctx, x, y, w, h, unit);
     ctx.fillStyle = '#f4f4f4';
     lines.forEach((line, i) => {

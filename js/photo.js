@@ -11,14 +11,30 @@ const MODEL_URL = 'https://storage.googleapis.com/mediapipe-models/image_segment
 const $ = (id) => document.getElementById(id);
 const view = $('view');
 const ctx = view.getContext('2d');
-const W = view.width, H = view.height;
+let W = view.width, H = view.height;
 const video = $('video');
 
-// 背景：ゴーレムの間＝参考画像そのまま／大広間＝ゴーレムのいない部分を左右対称にした画像＋3Dゴーレム
+// 背景ごとの画像・キャンバスの大きさ・人物の初期位置（cx/bottom はキャンバス座標）
+//   magic：魔法陣の間（人物は魔法陣の中心に立つ）
+//   hall ：大広間（ゴーレムのいない部分を左右対称にした画像＋3Dゴーレム）
+//   golem：ゴーレムの間（参考画像そのまま）
 const SCENES = {
-  golem: 'assets/dungeon.jpg',
-  hall: 'assets/dungeon-hall.jpg',
+  magic: {
+    src: 'assets/castle.jpg', w: 1292, h: 1025,
+    person: { cx: 640, bottom: 850, scale: 0.68 },
+    messageTop: true, // 足元の魔法陣を隠さない
+    messages: [
+      '{name}は まほうじんの うえに たった！',
+      'まほうじんが あおく かがやきだした！',
+      '{name}は あたらしい ちからに めざめた！',
+      '{name}は ゆうしゃに えらばれた！',
+      'ふしぎな ひかりが {name}を つつみこんだ…',
+    ],
+  },
+  hall: { src: 'assets/dungeon-hall.jpg', w: 1536, h: 1024, person: { cx: 460, bottom: 1045, scale: 1 } },
+  golem: { src: 'assets/dungeon.jpg', w: 1536, h: 1024, person: { cx: 460, bottom: 1045, scale: 1 } },
 };
+const sceneMessages = () => SCENES[ui.scene.value].messages || MESSAGES;
 
 // 参考画像内のゴーレムの目の位置（1536x1024基準）
 const EYES = [[1030, 238], [1076, 238]];
@@ -55,6 +71,7 @@ const pxCtx = pixelCv.getContext('2d');
 
 let bg = new Image();
 let hall = null;       // 3Dゴーレム（大広間のときだけ読み込む）
+let magic = null;      // 魔法陣の発光（魔法陣の間のときだけ読み込む）
 let shake = 0;         // こうげき時の画面ゆれ
 
 function loadImage(src) {
@@ -68,7 +85,19 @@ function loadImage(src) {
 
 async function applyScene() {
   const name = ui.scene.value;
-  bg = await loadImage(SCENES[name]);
+  const sc = SCENES[name];
+  bg = await loadImage(sc.src);
+  if (name === 'magic' && !magic) {
+    const { createMagicCircle } = await import('./magic.js');
+    magic = await createMagicCircle();
+  }
+  // キャンバスの大きさを背景に合わせ、人物を初期位置へ
+  view.width = W = sc.w;
+  view.height = H = sc.h;
+  state.cx = sc.person.cx;
+  state.bottom = sc.person.bottom;
+  ui.scale.value = sc.person.scale;
+  state.msgIndex = 0;
   $('golemBar').hidden = name !== 'hall';
   if (name === 'hall') {
     if (!hall) {
@@ -194,13 +223,19 @@ function updatePerson(now) {
   pCtx.globalCompositeOperation = 'destination-in';
   pCtx.imageSmoothingEnabled = true;
   pCtx.drawImage(maskCv, 0, 0, pw, ph);
-  pCtx.globalCompositeOperation = 'source-atop';
-  const grad = pCtx.createLinearGradient(0, 0, pw, 0);
-  grad.addColorStop(0, 'rgba(255,140,40,0.22)');
-  grad.addColorStop(1, 'rgba(70,100,255,0.22)');
-  pCtx.fillStyle = grad;
-  pCtx.fillRect(0, 0, pw, ph);
   pCtx.restore();
+  if (ui.scene.value === 'magic' && magic) {
+    magic.tintPerson(pCtx, pw, ph);
+  } else {
+    pCtx.save();
+    pCtx.globalCompositeOperation = 'source-atop';
+    const grad = pCtx.createLinearGradient(0, 0, pw, 0);
+    grad.addColorStop(0, 'rgba(255,140,40,0.22)');
+    grad.addColorStop(1, 'rgba(70,100,255,0.22)');
+    pCtx.fillStyle = grad;
+    pCtx.fillRect(0, 0, pw, ph);
+    pCtx.restore();
+  }
 }
 
 function personRect() {
@@ -214,6 +249,7 @@ function render(t, dt) {
   ctx.globalCompositeOperation = 'source-over';
   ctx.imageSmoothingEnabled = true;
   const useHall = ui.scene.value === 'hall' && hall;
+  const useMagic = ui.scene.value === 'magic' && magic;
   ctx.save();
   if (shake > 0) {
     shake = Math.max(0, shake - dt);
@@ -233,9 +269,12 @@ function render(t, dt) {
   }
   ctx.restore();
 
+  // 魔法陣の発光（人物より奥の層）
+  if (useMagic) magic.drawBack(ctx, W, H, t, dt, ui.embers.checked);
+
   // ゴーレムの目を明滅させる（絵のゴーレムのとき）
   ctx.save();
-  if (useHall) ctx.globalAlpha = 0;
+  if (ui.scene.value !== 'golem') ctx.globalAlpha = 0;
   ctx.globalCompositeOperation = 'lighter';
   const pulse = 0.55 + Math.sin(t * 3) * 0.35;
   for (const [ex, ey] of EYES) {
@@ -253,7 +292,7 @@ function render(t, dt) {
     // 足元の影
     ctx.save();
     const sg = ctx.createRadialGradient(state.cx, state.bottom - r.h * 0.01, 0, state.cx, state.bottom - r.h * 0.01, r.w * 0.35);
-    sg.addColorStop(0, 'rgba(0,0,0,0.55)');
+    sg.addColorStop(0, `rgba(0,0,0,${useMagic ? 0.4 : 0.55})`);
     sg.addColorStop(1, 'rgba(0,0,0,0)');
     ctx.fillStyle = sg;
     ctx.translate(0, state.bottom);
@@ -278,8 +317,11 @@ function render(t, dt) {
     }
   }
 
+  // 魔法陣の光（人物より手前の層）
+  if (useMagic) magic.drawFront(ctx, W, H, t, ui.embers.checked);
+
   // 火の粉
-  if (ui.embers.checked) {
+  if (ui.embers.checked && !useMagic) {
     ctx.save();
     ctx.globalCompositeOperation = 'lighter';
     for (const e of embers) {
@@ -303,9 +345,10 @@ function render(t, dt) {
 
   drawRpgHud(ctx, W, H, {
     name: ui.name.value.trim(),
-    message: fillMessage(MESSAGES[state.msgIndex], ui.name.value.trim()),
+    message: fillMessage(sceneMessages()[state.msgIndex % sceneMessages().length], ui.name.value.trim()),
     showStatus: ui.hudStatus.checked,
     showMessage: ui.hudMessage.checked,
+    messageTop: !!SCENES[ui.scene.value].messageTop,
   });
 }
 
@@ -350,7 +393,7 @@ $('attack').addEventListener('click', () => {
 });
 
 $('msgNext').addEventListener('click', () => {
-  state.msgIndex = (state.msgIndex + 1) % MESSAGES.length;
+  state.msgIndex = (state.msgIndex + 1) % sceneMessages().length;
   ui.hudMessage.checked = true;
 });
 
@@ -359,6 +402,11 @@ $('shoot').addEventListener('click', async () => {
   btn.disabled = true;
   await countdown($('countdown'), parseInt(ui.timer.value, 10));
   flash($('flash'));
+  if (ui.scene.value === 'magic' && magic) {
+    // 魔法陣が強く光った瞬間を撮る
+    magic.flash();
+    await new Promise((r) => setTimeout(r, 120));
+  }
   render(performance.now() / 1000, 0);
   await showResult($('result'), view);
   btn.disabled = false;
