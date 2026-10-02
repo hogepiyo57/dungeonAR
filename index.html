@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ダンジョンAR</title>
+<meta name="description" content="文化祭フォトスポット：ダンジョンに入りこんだような写真がとれるWeb AR">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DotGothic16&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+<style>
+  body {
+    background: #07070f url("assets/dungeon.jpg") center / cover no-repeat fixed;
+    display: grid;
+    place-items: center;
+    padding: 16px;
+  }
+  body::before { content: ""; position: fixed; inset: 0; background: rgba(0, 0, 0, .45); }
+  main { position: relative; width: min(460px, 100%); display: grid; gap: 14px; }
+  .title { text-align: center; font-size: clamp(28px, 8vw, 42px); letter-spacing: .08em; text-shadow: 3px 3px 0 #000, 0 0 18px #ff8a30; margin: 0; }
+  .sub { text-align: center; margin: -6px 0 0; color: #ffd9a0; text-shadow: 2px 2px 0 #000; }
+  .staff { font-size: 13px; text-align: center; color: var(--muted); }
+  .staff a { margin: 0 6px; }
+</style>
+</head>
+<body>
+<main>
+  <h1 class="title">ダンジョンAR</h1>
+  <p class="sub">〜 石の守護者の間 〜</p>
+
+  <div class="win">
+    <p style="margin:0 0 8px">ぼうけんしゃよ、どちらを えらぶ？</p>
+    <ul class="cmd">
+      <li><a href="photo.html">ダンジョンで しゃしんを とる
+        <small>人物を切り抜いて、ダンジョンの中に入りこむ（自撮りOK）</small></a></li>
+      <li><a href="ar.html">ゴーレムを しょうかんする
+        <small>教室のポスターをうつすと、ゴーレムが出現する</small></a></li>
+    </ul>
+  </div>
+
+  <p class="staff">係用：<a href="marker.html">ポスター印刷</a><a href="qr.html">QRコード</a></p>
+</main>
+</body>
+</html>

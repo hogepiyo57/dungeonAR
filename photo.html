@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ダンジョン撮影</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DotGothic16&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+<style>
+  body { display: flex; flex-direction: column; }
+  .stage { position: relative; width: 100%; max-width: 1100px; margin: 0 auto; }
+  .stage canvas { display: block; width: 100%; height: auto; background: #000; touch-action: none; }
+  .panel { width: 100%; max-width: 1100px; margin: 0 auto; padding: 12px 16px 24px; display: grid; gap: 12px; }
+  .bar { display: flex; align-items: center; justify-content: center; gap: 14px; }
+  .settings { display: grid; gap: 10px; grid-template-columns: 1fr 1fr; }
+  .settings .full { grid-column: 1 / -1; }
+  .toggles { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 14px; }
+  .toggles label { display: flex; align-items: center; gap: 6px; }
+  .hint { color: var(--muted); font-size: 13px; text-align: center; margin: 0; }
+  @media (orientation: landscape) and (max-height: 600px) {
+    body { flex-direction: row; }
+    .stage { flex: 1; max-height: 100dvh; display: grid; place-items: center; }
+    .stage canvas { width: auto; height: 100dvh; max-width: 100%; object-fit: contain; }
+    .panel { width: 300px; flex: none; max-height: 100dvh; overflow-y: auto; }
+    .settings { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="stage">
+  <canvas id="view" width="1536" height="1024" aria-label="合成プレビュー"></canvas>
+</div>
+
+<div class="panel">
+  <div class="bar">
+    <button class="btn" id="flip" type="button">カメラ切替</button>
+    <button class="shutter" id="shoot" type="button" aria-label="撮影" disabled></button>
+    <button class="btn" id="msgNext" type="button">セリフ変更</button>
+  </div>
+  <p class="hint"><a href="index.html">◀ もどる</a>　画面をドラッグで人物の位置、ピンチまたは「大きさ」で拡大・縮小</p>
+
+  <div class="settings win">
+    <label class="field full">なまえ（ステータスとセリフに入ります）
+      <input type="text" id="name" maxlength="8" placeholder="ゆうしゃ">
+    </label>
+    <label class="field">大きさ
+      <input type="range" id="scale" min="0.4" max="1.6" step="0.01" value="1">
+    </label>
+    <label class="field">タイマー
+      <select id="timer">
+        <option value="0">なし</option>
+        <option value="3" selected>3秒</option>
+        <option value="5">5秒</option>
+      </select>
+    </label>
+    <div class="toggles full">
+      <label><input type="checkbox" id="pixel" checked> ドット絵化</label>
+      <label><input type="checkbox" id="hudStatus" checked> ステータス</label>
+      <label><input type="checkbox" id="hudMessage" checked> メッセージ</label>
+      <label><input type="checkbox" id="embers" checked> 火の粉</label>
+    </div>
+  </div>
+</div>
+
+<div class="overlay-msg" id="loading">
+  <div class="win"><h2>じゅんびちゅう…</h2><p id="loadingText">カメラと人物切り抜きAIを読み込んでいます。カメラの許可を求められたら「許可」を押してください。</p></div>
+</div>
+
+<div class="countdown" id="countdown" hidden></div>
+<div class="flash" id="flash"></div>
+
+<div class="result" id="result" hidden>
+  <img alt="撮影した写真">
+  <div class="row">
+    <button class="btn primary" data-act="share" type="button">写真に保存・共有</button>
+    <button class="btn" data-act="download" type="button">ダウンロード</button>
+    <button class="btn" data-act="close" type="button">もう一度とる</button>
+  </div>
+  <p>うまく保存できないときは、画像を長押しして「写真に追加」を選んでください</p>
+</div>
+
+<video id="video" playsinline muted autoplay style="position:fixed;left:0;top:0;width:2px;height:2px;opacity:0;pointer-events:none"></video>
+<script type="module" src="js/photo.js"></script>
+</body>
+</html>

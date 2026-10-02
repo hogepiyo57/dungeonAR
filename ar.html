@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ゴーレム召喚AR</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DotGothic16&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/",
+    "mindar-image-three": "https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-three.prod.js"
+  }
+}
+</script>
+<style>
+  html, body { height: 100%; overflow: hidden; }
+  #ar { position: fixed; inset: 0; overflow: hidden; }
+  .hud { position: fixed; left: 0; right: 0; z-index: 20; display: flex; justify-content: center; padding: 0 12px; pointer-events: none; }
+  .hud > * { pointer-events: auto; }
+  .hud.top { top: calc(10px + env(safe-area-inset-top)); justify-content: flex-end; }
+  .hud.bottom { bottom: calc(16px + env(safe-area-inset-bottom)); align-items: center; gap: 14px; }
+  .status { position: fixed; left: 50%; top: 30%; transform: translateX(-50%); z-index: 15; max-width: 90vw; text-align: center; pointer-events: none; }
+  .status[hidden] { display: none; }
+  .msg { position: fixed; left: 12px; right: 12px; bottom: calc(110px + env(safe-area-inset-bottom)); z-index: 15; font-size: 18px; pointer-events: none; }
+  .msg[hidden] { display: none; }
+  .settings { position: fixed; right: 12px; top: calc(60px + env(safe-area-inset-top)); z-index: 25; width: min(300px, calc(100vw - 24px)); display: grid; gap: 10px; }
+  .settings[hidden] { display: none; }
+  .toggles { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 14px; }
+  .toggles label { display: flex; align-items: center; gap: 6px; }
+</style>
+</head>
+<body>
+<div id="ar"></div>
+
+<a class="btn back" href="index.html">◀ もどる</a>
+<div class="hud top"><button class="btn" id="toggleSettings" type="button">せってい</button></div>
+
+<div class="win settings" id="settings" hidden>
+  <label class="field">なまえ
+    <input type="text" id="name" maxlength="8" placeholder="ゆうしゃ">
+  </label>
+  <label class="field">ポスターの場所
+    <select id="mount">
+      <option value="wall" selected>かべに貼る</option>
+      <option value="floor">床・机に置く</option>
+    </select>
+  </label>
+  <label class="field">ゴーレムの大きさ
+    <input type="range" id="size" min="0.2" max="3" step="0.05" value="0.6">
+  </label>
+  <label class="field">左右の位置
+    <input type="range" id="offsetX" min="-1.5" max="1.5" step="0.05" value="0.25">
+  </label>
+  <label class="field">タイマー
+    <select id="timer">
+      <option value="0" selected>なし</option>
+      <option value="3">3秒</option>
+      <option value="5">5秒</option>
+    </select>
+  </label>
+  <div class="toggles">
+    <label><input type="checkbox" id="chest" checked> 宝箱</label>
+    <label><input type="checkbox" id="hud" checked> RPGウィンドウ</label>
+  </div>
+</div>
+
+<div class="win status" id="status">ポスターを<br>カメラにうつしてください</div>
+<div class="win msg" id="msg" hidden></div>
+
+<div class="hud bottom">
+  <button class="btn" id="attack" type="button">こうげき</button>
+  <button class="shutter" id="shoot" type="button" aria-label="撮影" disabled></button>
+  <button class="btn" id="msgNext" type="button">セリフ</button>
+</div>
+
+<div class="overlay-msg" id="loading">
+  <div class="win"><h2>じゅんびちゅう…</h2><p>カメラとARを起動しています。カメラの許可を求められたら「許可」を押してください。</p></div>
+</div>
+
+<div class="countdown" id="countdown" hidden></div>
+<div class="flash" id="flash"></div>
+
+<div class="result" id="result" hidden>
+  <img alt="撮影した写真">
+  <div class="row">
+    <button class="btn primary" data-act="share" type="button">写真に保存・共有</button>
+    <button class="btn" data-act="download" type="button">ダウンロード</button>
+    <button class="btn" data-act="close" type="button">もう一度とる</button>
+  </div>
+  <p>うまく保存できないときは、画像を長押しして「写真に追加」を選んでください</p>
+</div>
+
+<script type="module" src="js/ar.js"></script>
+</body>
+</html>

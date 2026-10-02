@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>入口QRコード</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DotGothic16&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+<style>
+  body { padding: 16px; }
+  .wrap { max-width: 900px; margin: 48px auto 0; display: grid; gap: 16px; }
+  .cards { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+  .card { background: #fff; color: #111; border-radius: 10px; padding: 16px; text-align: center; }
+  .card svg { width: 100%; max-width: 260px; height: auto; }
+  .card h3 { margin: 0 0 8px; font-weight: normal; font-size: 22px; }
+  .card p { margin: 6px 0 0; font-size: 12px; word-break: break-all; color: #555; }
+  @media print {
+    body { background: #fff; }
+    .back, .no-print { display: none; }
+    .wrap { margin: 0; }
+  }
+</style>
+</head>
+<body>
+<a class="btn back" href="index.html">◀ もどる</a>
+<div class="wrap">
+  <div class="win no-print">
+    <h2>入口に貼るQRコード</h2>
+    <label class="field">サイトのURL（GitHub Pages のURL。ふつうは自動で入ります）
+      <input type="text" id="base">
+    </label>
+    <p><button class="btn primary" type="button" onclick="print()">印刷する</button></p>
+  </div>
+  <div class="cards" id="cards"></div>
+</div>
+<script>
+  const pages = [
+    ['ダンジョンAR', ''],
+    ['しゃしんを とる', 'photo.html'],
+    ['ゴーレム しょうかん', 'ar.html'],
+  ];
+  const base = document.getElementById('base');
+  base.value = location.href.replace(/qr\.html.*$/, '');
+  function draw() {
+    const root = base.value.trim().replace(/\/?$/, '/');
+    document.getElementById('cards').innerHTML = pages.map(([title, path]) => {
+      const url = root + path;
+      const qr = qrcode(0, 'M');
+      qr.addData(url);
+      qr.make();
+      return `<div class="card"><h3>${title}</h3>${qr.createSvgTag({ cellSize: 6, margin: 2, scalable: true })}<p>${url}</p></div>`;
+    }).join('');
+  }
+  base.addEventListener('input', draw);
+  draw();
+</script>
+</body>
+</html>

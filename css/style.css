@@ -1,0 +1,170 @@
+/* ダンジョンAR 共通スタイル（RPG風ウィンドウ） */
+:root {
+  --bg: #07070f;
+  --win-bg: #000;
+  --win-line: #f4f4f4;
+  --text: #f4f4f4;
+  --accent: #ffb43a;
+  --danger: #ff5a4a;
+  --muted: #9aa0b8;
+  --font: "DotGothic16", "Hiragino Kaku Gothic ProN", "Meiryo", sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  -webkit-text-size-adjust: 100%;
+}
+
+body { min-height: 100dvh; }
+
+a { color: var(--accent); }
+
+/* RPG風ウィンドウ：黒地に白い二重枠 */
+.win {
+  background: var(--win-bg);
+  border: 3px solid var(--win-line);
+  border-radius: 10px;
+  box-shadow: 0 0 0 3px #000, 0 6px 20px rgba(0, 0, 0, .6);
+  padding: 14px 16px;
+  line-height: 1.7;
+}
+
+.win h1, .win h2 { margin: 0 0 8px; font-weight: normal; }
+
+/* コマンド選択リスト */
+.cmd { list-style: none; margin: 0; padding: 0; }
+.cmd li + li { margin-top: 6px; }
+.cmd a, .cmd button {
+  display: block;
+  width: 100%;
+  padding: 10px 8px 10px 30px;
+  position: relative;
+  color: var(--text);
+  background: none;
+  border: 0;
+  font: inherit;
+  font-size: 18px;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+}
+.cmd a::before, .cmd button::before {
+  content: "▶";
+  position: absolute;
+  left: 6px;
+  opacity: 0;
+}
+.cmd a:hover::before, .cmd a:focus::before,
+.cmd button:hover::before, .cmd button:focus::before { opacity: 1; animation: blink 0.8s steps(1) infinite; }
+.cmd small { display: block; color: var(--muted); font-size: 13px; }
+
+@keyframes blink { 50% { opacity: 0; } }
+
+/* ボタン */
+.btn {
+  appearance: none;
+  font: inherit;
+  font-size: 16px;
+  color: var(--text);
+  background: #000;
+  border: 2px solid var(--win-line);
+  border-radius: 8px;
+  padding: 10px 14px;
+  cursor: pointer;
+  min-height: 44px;
+}
+.btn:active { transform: translateY(1px); }
+.btn.primary { border-color: var(--accent); color: var(--accent); }
+
+/* 大きなシャッターボタン */
+.shutter {
+  width: 76px;
+  height: 76px;
+  border-radius: 50%;
+  border: 5px solid #fff;
+  background: radial-gradient(circle, #ff6a3a 0 55%, #b8241a 56% 100%);
+  box-shadow: 0 0 0 4px #000, 0 4px 14px rgba(0, 0, 0, .6);
+  cursor: pointer;
+  flex: none;
+}
+.shutter:active { transform: scale(.94); }
+.shutter:disabled { filter: grayscale(1); opacity: .5; }
+
+/* 読み込み中・エラー表示 */
+.overlay-msg {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(0, 0, 0, .75);
+  z-index: 50;
+}
+.overlay-msg[hidden] { display: none; }
+.overlay-msg .win { max-width: 420px; width: 100%; }
+
+/* 撮影結果モーダル */
+.result {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  background: rgba(0, 0, 0, .9);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 16px;
+}
+.result[hidden] { display: none; }
+.result img {
+  max-width: 100%;
+  max-height: 70dvh;
+  border: 3px solid #fff;
+  border-radius: 6px;
+}
+.result .row { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+.result p { margin: 0; color: var(--muted); font-size: 13px; text-align: center; }
+
+/* カウントダウン・フラッシュ */
+.countdown {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: 30vmin;
+  color: #fff;
+  text-shadow: 0 0 20px #000, 4px 4px 0 #000;
+  pointer-events: none;
+  z-index: 40;
+}
+.countdown[hidden] { display: none; }
+.flash {
+  position: fixed;
+  inset: 0;
+  background: #fff;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 45;
+}
+.flash.on { animation: flash .5s ease-out; }
+@keyframes flash { 0% { opacity: .95; } 100% { opacity: 0; } }
+
+.back { position: fixed; top: 10px; left: 10px; z-index: 30; font-size: 14px; padding: 6px 10px; min-height: 0; }
+
+label.field { display: flex; flex-direction: column; gap: 4px; font-size: 14px; color: var(--muted); }
+label.field input[type="text"], label.field select {
+  font: inherit;
+  font-size: 16px;
+  color: var(--text);
+  background: #111;
+  border: 2px solid #666;
+  border-radius: 6px;
+  padding: 8px;
+}
+input[type="range"] { width: 100%; accent-color: var(--accent); }
