@@ -59,6 +59,29 @@ function stoneGrid(w, h, d, nx, ny, M, seed) {
   return g;
 }
 
+// こぶしの裏に刻まれた「G」の文字（背景は透明）
+// 腕をふりあげると上下が逆さまになるので、あらかじめ180度回して描いておく
+function letterTexture(text) {
+  const S = 128;
+  const c = document.createElement('canvas');
+  c.width = c.height = S;
+  const g = c.getContext('2d');
+  g.translate(S / 2, S / 2);
+  g.rotate(Math.PI);
+  g.textAlign = 'center';
+  g.textBaseline = 'middle';
+  g.font = 'bold 96px "Arial Rounded MT Bold", "Hiragino Maru Gothic ProN", "Meiryo", sans-serif';
+  g.lineJoin = 'round';
+  g.lineWidth = 10;
+  g.strokeStyle = 'rgba(30,20,10,0.85)';
+  g.strokeText(text, 0, 6);
+  g.fillStyle = '#ffffff';
+  g.fillText(text, 0, 6);
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+}
+
 function block(w, h, d, mat) {
   const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
   return m;
@@ -136,6 +159,7 @@ export function createGolem() {
 
   // 腕（肩を軸に回転）と大きなこぶし
   const arms = [];
+  let letter = null;
   for (const side of [-1, 1]) {
     const arm = new THREE.Group();
     arm.position.set(side * 0.62, 0.78, 0.02);
@@ -150,6 +174,17 @@ export function createGolem() {
     const knuckle = block(0.36, 0.08, 0.08, M(0));
     knuckle.position.set(0, -0.4, 0.22);
     elbow.add(fore, fist, knuckle);
+    if (side === 1) {
+      // 左手（画面の右側）のこぶしの裏。ふりあげたときだけカメラ側を向く
+      letter = new THREE.Mesh(
+        new THREE.PlaneGeometry(0.34, 0.3),
+        new THREE.MeshBasicMaterial({ map: letterTexture('G'), transparent: true, opacity: 0, depthWrite: false })
+      );
+      letter.position.set(0, -0.44, -0.202);
+      letter.rotation.y = Math.PI;
+      letter.visible = false;
+      elbow.add(letter);
+    }
     arm.add(upper, elbow);
     arm.rotation.z = side * 0.18;
     arm.userData = { side, elbow };
@@ -207,7 +242,11 @@ export function createGolem() {
       else rx = 0.8 * (1 - (p - 0.6) / 0.4);
       arm.rotation.x = rx;
       torso.rotation.x = p > 0.45 && p < 0.8 ? 0.15 : 0;
-      if (p >= 1) { state.attack = -1; torso.rotation.x = 0; }
+      // ふりあげている間だけ「G」を見せる（上がりきる手前で浮かび、振り下ろしで消える）
+      const show = p < 0.45 ? smoothstep(0.15, 0.35, p) : 1 - smoothstep(0.45, 0.52, p);
+      letter.material.opacity = show;
+      letter.visible = show > 0.01;
+      if (p >= 1) { state.attack = -1; torso.rotation.x = 0; letter.visible = false; }
     }
 
     // 足ぶみ
@@ -278,5 +317,9 @@ export function createEmbers(count = 60, spread = 2) {
 function easeOutBack(x) {
   const c1 = 1.70158, c3 = c1 + 1;
   return 1 + c3 * Math.pow(x - 1, 3) + c1 * Math.pow(x - 1, 2);
+}
+function smoothstep(a, b, x) {
+  const t = Math.max(0, Math.min(1, (x - a) / (b - a)));
+  return t * t * (3 - 2 * t);
 }
 function easeOutCubic(x) { return 1 - Math.pow(1 - x, 3); }
