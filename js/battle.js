@@ -21,17 +21,15 @@ export function countLabel(n) {
   return `${n}ひき`;
 }
 
+// 枠は白い線1本だけ（外側のふちに沿わせる）
 function battleWindow(ctx, { x, y, w, h }) {
   ctx.save();
   ctx.fillStyle = '#080a1c'; // 不透明にして、絵に描かれた元の文字を完全に隠す
   roundRect(ctx, x, y, w, h, 12);
   ctx.fill();
-  ctx.lineWidth = 7;
-  ctx.strokeStyle = '#000';
-  ctx.stroke();
   ctx.lineWidth = 6;
   ctx.strokeStyle = '#f4f4f4';
-  roundRect(ctx, x + 6, y + 6, w - 12, h - 12, 8);
+  roundRect(ctx, x + 3, y + 3, w - 6, h - 6, 10);
   ctx.stroke();
   ctx.restore();
 }
@@ -57,8 +55,8 @@ function fitText(ctx, text, x, y, maxW) {
   ctx.restore();
 }
 
-// leader：パーティ先頭の名前、enemies：[{ name, count }]、cursorOn：▶ を表示するか
-export function drawBattleHud(ctx, { leader, enemies, showParty = true, showBottom = true, cursorOn = true }) {
+// enemies：[{ name, count }]、cursorOn：▶ を表示するか
+export function drawBattleHud(ctx, { enemies, showParty = true, showBottom = true, cursorOn = true }) {
   ctx.save();
   ctx.textBaseline = 'top';
   ctx.fillStyle = '#f4f4f4';
@@ -72,9 +70,8 @@ export function drawBattleHud(ctx, { leader, enemies, showParty = true, showBott
     const colW = (win.w - 70) / 4;
     PARTY.forEach((p, i) => {
       const x = win.x + 46 + i * colW;
-      const name = i === 0 && leader ? leader : p.name;
       ctx.font = `38px ${FONT}`;
-      fitText(ctx, name, x, 56, colW - 14);
+      fitText(ctx, p.name, x, 56, colW - 14);
       ctx.font = `40px ${FONT}`;
       ctx.fillText(`H ${String(p.h).padStart(3)}`, x, 120);
       ctx.fillText(`M ${String(p.m).padStart(3)}`, x, 163);

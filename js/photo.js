@@ -120,6 +120,7 @@ async function applyScene() {
   $('magicBar').hidden = name !== 'magic';
   $('battleFields').hidden = name !== 'battle';
   $('msgNext').hidden = name === 'battle';
+  $('nameField').hidden = name === 'battle'; // 戦闘画面のパーティは固定なので名前入力は不要
   paintSwatches();
   // キャンバスの大きさを背景に合わせ、人物を初期位置へ
   view.width = W = sc.w;
@@ -375,7 +376,6 @@ function render(t, dt) {
 
   if (SCENES[ui.scene.value].hud === 'battle' && battle) {
     battle.drawBattleHud(ctx, {
-      leader: ui.name.value.trim(),
       enemies: readEnemies(),
       showParty: ui.hudStatus.checked,
       showBottom: ui.hudMessage.checked,
