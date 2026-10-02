@@ -5,6 +5,9 @@ import { createGolem, createChest } from './golem.js';
 // 低解像度で描いてから拡大し、背景のドット絵になじませる
 const RW = 768, RH = 512;
 
+// ゴーレムの立ち位置（床の上。z がマイナスほど奥）
+const GOLEM_X = 0.7, GOLEM_Z = -3.0;
+
 export function createHallGolem() {
   const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: false, preserveDrawingBuffer: true });
   renderer.setPixelRatio(1);
@@ -31,10 +34,14 @@ export function createHallGolem() {
   const torchR = new THREE.PointLight(0xff8a30, 3, 8, 1.5);
   torchR.position.set(3.2, 2.2, 1);
   scene.add(torchL, torchR);
+  // 奥に立つゴーレムを照らす灯り
+  const backLight = new THREE.PointLight(0xffa050, 2.2, 6, 1.5);
+  backLight.position.set(GOLEM_X - 1.2, 2.4, GOLEM_Z + 1.8);
+  scene.add(backLight);
 
   const golem = createGolem();
-  golem.scale.setScalar(1.35);
-  golem.position.set(1.0, 0, -0.3);
+  golem.scale.setScalar(1.6);
+  golem.position.set(GOLEM_X, 0, GOLEM_Z);
   golem.rotation.y = -0.35; // 人物（左側）のほうを向く
   scene.add(golem);
 
@@ -51,7 +58,7 @@ export function createHallGolem() {
   );
   shadow.rotation.x = -Math.PI / 2;
   shadow.scale.set(1.3, 0.8, 1);
-  shadow.position.set(1.0, 0.01, -0.25);
+  shadow.position.set(GOLEM_X, 0.01, GOLEM_Z + 0.05);
   scene.add(shadow);
 
   let t = 0;
