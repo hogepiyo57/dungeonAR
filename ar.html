@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>ゴーレム召喚AR</title>
+<title>しょうかんAR</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DotGothic16&display=swap" rel="stylesheet">
@@ -34,6 +34,9 @@
   .settings[hidden] { display: none; }
   .toggles { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 14px; }
   .toggles label { display: flex; align-items: center; gap: 6px; }
+  .settings input[type="number"] { font: inherit; font-size: 16px; color: var(--text); background: #111; border: 2px solid #666; border-radius: 6px; padding: 6px 8px; width: 100%; }
+  /* キャラ・ポスターの場所ごとに使う設定だけを出す */
+  body[data-chara="golem"] .tsubamei-only, body[data-chara="tsubamei"] .golem-only, body[data-mount="floor"] .wall-only { display: none; }
 </style>
 </head>
 <body>
@@ -52,14 +55,26 @@
   <label class="field">なまえ
     <input type="text" id="name" maxlength="8" placeholder="ゆうしゃ">
   </label>
+  <label class="field">よびだす キャラ
+    <select id="chara">
+      <option value="golem" selected>ゴーレム</option>
+      <option value="tsubamei">つばめい（1m20cm）</option>
+    </select>
+  </label>
   <label class="field">ポスターの場所
     <select id="mount">
       <option value="wall" selected>かべに貼る</option>
       <option value="floor">床・机に置く</option>
     </select>
   </label>
-  <label class="field">ゴーレムの大きさ
+  <label class="field golem-only">ゴーレムの大きさ
     <input type="range" id="size" min="0.2" max="3" step="0.05" value="0.6">
+  </label>
+  <label class="field tsubamei-only">印刷したポスターの横幅（cm）
+    <input type="number" id="posterWidth" min="10" max="200" step="1" value="40" inputmode="numeric">
+  </label>
+  <label class="field tsubamei-only wall-only">ポスターの下のふちの高さ（床から cm）
+    <input type="number" id="posterBottom" min="0" max="250" step="1" value="100" inputmode="numeric">
   </label>
   <label class="field">左右の位置
     <input type="range" id="offsetX" min="-1.5" max="1.5" step="0.05" value="0.25">
@@ -72,7 +87,7 @@
     </select>
   </label>
   <div class="toggles">
-    <label><input type="checkbox" id="chest" checked> 宝箱</label>
+    <label class="golem-only"><input type="checkbox" id="chest" checked> 宝箱</label>
     <label><input type="checkbox" id="hud" checked> RPGウィンドウ</label>
     <label><input type="checkbox" id="sound" checked> おと</label>
   </div>

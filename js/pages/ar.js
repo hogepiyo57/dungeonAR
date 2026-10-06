@@ -1,18 +1,45 @@
-// モードB：ポスター（ダンジョン画像）をカメラでうつすと、3Dのゴーレムが出現する
+// モードB：ポスター（ダンジョン画像）をカメラでうつすと、3Dのゴーレムまたはつばめいが出現する
+//   つばめいは実物大（1.2m）。印刷したポスターの横幅から、ポスター座標→メートルを換算する
 import * as THREE from 'three';
 import { MindARThree } from 'mindar-image-three';
 import { createGolem, createChest, createEmbers } from '../models/golem.js';
+import { createTsubamei } from '../models/tsubamei.js';
 import { MESSAGES, fillMessage, drawRpgHud, drawStamp, ensureFont } from '../common/rpg-ui.js';
 import { countdown, flash, showResult } from '../common/capture.js';
 import { initialFacing, rememberFacing, bindCameraSelect, cameraErrorText, showError } from '../common/camera.js';
 import { play, bindSoundToggle } from '../common/sound.js';
+import { load, save } from '../common/storage.js';
 
 const $ = (id) => document.getElementById(id);
 const container = $('ar');
 const ui = {
   name: $('name'), mount: $('mount'), size: $('size'), offsetX: $('offsetX'),
   timer: $('timer'), chest: $('chest'), hud: $('hud'),
+  chara: $('chara'), posterWidth: $('posterWidth'), posterBottom: $('posterBottom'),
 };
+
+// よびだすキャラ：URLの ?chara=tsubamei で最初から選べる
+const charaParam = new URLSearchParams(location.search).get('chara');
+if (charaParam === 'tsubamei') ui.chara.value = 'tsubamei';
+const isTsubamei = () => ui.chara.value === 'tsubamei';
+
+// つばめいのセリフ（ポーズに合わせる）
+const TSUBAMEI_MESSAGES = {
+  appear: 'つばめいが あらわれた！',
+  stand: 'つばめいは {name}を じっと みている',
+  wave: 'つばめいが {name}に てを ふっている！',
+  banzai: 'つばめいは うれしそうに はねを ひろげた！',
+  shy: 'つばめいは ちょっぴり てれている…',
+  fly: 'つばめいは そらへ まいあがった！',
+};
+const messageList = () => (isTsubamei() ? Object.values(TSUBAMEI_MESSAGES) : MESSAGES);
+
+// ポスターの大きさ・高さは係が一度入れたら端末に記憶する
+for (const key of ['posterWidth', 'posterBottom']) {
+  const v = load(key);
+  if (v) ui[key].value = v;
+  ui[key].addEventListener('change', () => save(key, ui[key].value));
+}
 
 // ポスター画像の縦横比（幅を1としたときの高さ）
 const TARGET_ASPECT = 1024 / 1536;
@@ -45,10 +72,13 @@ world.add(stand);
 const golem = createGolem();
 const chest = createChest();
 const embers = createEmbers(50, 1.6);
-stand.add(golem, chest, embers);
+const tsubamei = createTsubamei();
+stand.add(golem, chest, embers, tsubamei);
+const activeModel = () => (isTsubamei() ? tsubamei : golem);
 
-// 照明：たいまつの暖色と、ダンジョンの青い環境光
-scene.add(new THREE.HemisphereLight(0x9fb0ff, 0x3a2414, 1.4));
+// 照明：たいまつの暖色と、ダンジョンの青い環境光（つばめいのときは色を付けない）
+const hemi = new THREE.HemisphereLight(0x9fb0ff, 0x3a2414, 1.4);
+scene.add(hemi);
 const sun = new THREE.DirectionalLight(0xffd0a0, 1.6);
 sun.position.set(-1, 2, 3);
 scene.add(sun);
@@ -58,6 +88,9 @@ stand.add(torch);
 function layout() {
   const s = parseFloat(ui.size.value);
   const ox = parseFloat(ui.offsetX.value);
+  const t = isTsubamei();
+  document.body.dataset.chara = ui.chara.value;
+  document.body.dataset.mount = ui.mount.value;
   if (ui.mount.value === 'wall') {
     // 壁：ポスターの下端に立ち、手前にせり出す
     stand.rotation.set(0, 0, 0);
@@ -71,12 +104,33 @@ function layout() {
   golem.position.set(ox, 0, 0);
   chest.scale.setScalar(s * 0.8);
   chest.position.set(ox + s * 0.8, 0, s * 0.15);
-  chest.visible = ui.chest.checked;
+  chest.visible = ui.chest.checked && !t;
   embers.scale.setScalar(s);
   embers.position.set(ox, 0, 0);
   torch.position.set(ox - s * 0.8, s * 1.4, s * 0.8);
+  golem.visible = embers.visible = torch.visible = !t;
+
+  // つばめい：1m＝ポスターの横幅の 1/幅(m) 倍。かべに貼ったときは床まで下げ、少し手前に立たせる
+  const perMeter = 100 / Math.max(10, parseFloat(ui.posterWidth.value) || 40);
+  const wall = ui.mount.value === 'wall';
+  const bottom = (parseFloat(ui.posterBottom.value) || 0) / 100;
+  tsubamei.visible = t;
+  tsubamei.scale.setScalar(perMeter);
+  tsubamei.position.set(ox, wall ? -bottom * perMeter : 0, wall ? 0.3 * perMeter : 0);
+  hemi.color.set(t ? 0xffffff : 0x9fb0ff);
+  hemi.groundColor.set(t ? 0x807080 : 0x3a2414);
+  sun.color.set(t ? 0xffffff : 0xffd0a0);
+  $('attack').textContent = t ? 'ポーズ' : 'こうげき';
 }
-for (const el of [ui.size, ui.offsetX, ui.mount, ui.chest]) el.addEventListener('input', layout);
+for (const el of [ui.size, ui.offsetX, ui.mount, ui.chest, ui.posterWidth, ui.posterBottom]) el.addEventListener('input', layout);
+ui.chara.addEventListener('change', () => {
+  layout();
+  if (!everFound) return;
+  activeModel().userData.appear();
+  play('summon');
+  msgIndex = 0;
+  say(fillMessage(messageList()[0], playerName()));
+});
 layout();
 
 // ---------- メッセージ ----------
@@ -105,9 +159,9 @@ anchor.onTargetFound = () => {
   if (!everFound) {
     everFound = true;
     world.visible = true;
-    golem.userData.appear();
+    activeModel().userData.appear();
     play('summon');
-    say(fillMessage(MESSAGES[0], playerName()));
+    say(fillMessage(messageList()[0], playerName()));
     $('shoot').disabled = false;
   }
 };
@@ -119,12 +173,12 @@ function tick() {
   const dt = Math.min(0.1, clock.getDelta());
   const t = clock.elapsedTime;
   if (anchor.visible) world.matrix.copy(anchor.group.matrix);
-  golem.userData.update(dt);
+  activeModel().userData.update(dt);
   embers.userData.update(dt, t);
   torch.intensity = 2.2 + Math.sin(t * 13) * 0.25 + Math.sin(t * 7.3) * 0.25;
 
   // こうげきの振り下ろしで画面をゆらす
-  const phase = golem.userData.attackPhase();
+  const phase = isTsubamei() ? -1 : golem.userData.attackPhase();
   if (phase > 0.55 && phase < 0.6 && performance.now() > shakeUntil) {
     shakeUntil = performance.now() + 400;
     play('hit');
@@ -162,7 +216,7 @@ function capture() {
   if (ui.hud.checked) {
     drawRpgHud(ctx, out.width, out.height, {
       name: playerName(),
-      message: $('msg').dataset.text || fillMessage(MESSAGES[0], playerName()),
+      message: $('msg').dataset.text || fillMessage(messageList()[0], playerName()),
       showStatus: true,
       showMessage: true,
     });
@@ -194,15 +248,22 @@ $('shoot').addEventListener('click', async () => {
 
 $('attack').addEventListener('click', () => {
   if (!everFound) return;
+  if (isTsubamei()) {
+    // つばめい：すぐに次のポーズへ
+    const pose = tsubamei.userData.nextPose();
+    play('select');
+    say(fillMessage(TSUBAMEI_MESSAGES[pose], playerName()));
+    return;
+  }
   golem.userData.attack();
   play('swing');
   say(fillMessage(MESSAGES[2], playerName()));
 });
 
 $('msgNext').addEventListener('click', () => {
-  msgIndex = (msgIndex + 1) % MESSAGES.length;
+  msgIndex = (msgIndex + 1) % messageList().length;
   ui.hud.checked = true;
-  say(fillMessage(MESSAGES[msgIndex], playerName()));
+  say(fillMessage(messageList()[msgIndex], playerName()));
   play('select');
 });
 
