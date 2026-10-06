@@ -9,7 +9,7 @@
 | ゴーレムと たたかう | `photo.html?scene=hall` | 大広間の奥に3Dゴーレムと宝箱が出現し、切り抜いた人物と一緒に写る。ポスター不要。「しょうかん」で登場しなおし、「こうげき」で左手をふりあげて（こぶしに「G」）振り下ろし＋画面ゆれ |
 | ダンジョンで しゃしんを とる | `photo.html?scene=magic` | お城の部屋で、光る魔法陣の上に立った写真をとる。魔法陣の色はセリフに合わせて変わる（かえんまほう＝赤、あおく かがやきだした＝青、めざめた＝紫、えらばれた＝金、ふしぎな ひかり＝緑）。シャッターの瞬間に強く光る |
 | モンスターに なる | `photo.html?scene=battle` | 戦闘画面のまんなかに、切り抜いた自分がモンスターとして立つ。右下の「てき」の名前と数（最大3行）を入力できる |
-| つばめいを よびだす | `ar.html?chara=tsubamei` | ポスターをうつすと、実物大（1m20cm）のつばめいが出現する。設定の「印刷したポスターの横幅」と「ポスターの下のふちの高さ」から大きさと床の位置を決める（係が一度入れれば端末に記憶） |
+| つばめいを よびだす | `ar.html?chara=tsubamei` | つばめいのポスター（`tsubamei-marker.html`）をうつすと、実物大（1m20cm）のつばめいが出現する。設定の「印刷したポスターの横幅」（A4縦＝21cm）と「ポスターの下のふちの高さ」から大きさと床の位置を決める（係が一度入れれば端末に記憶） |
 | ゴーレムを しょうかんする | `ar.html` | 教室に貼ったポスターをうつすと、3Dの石ゴーレムが出現する |
 | （撮影画面の「ばしょ」から） | `photo.html?scene=golem` | 参考画像（絵のゴーレム入り）に人物を合成する |
 
@@ -42,13 +42,14 @@ URLの末尾に `?camera=user`（イン）または `?camera=environment`（ア�
 
 係用ページ：
 
-- `marker.html` … ARポスター（印刷用）
+- `marker.html` … ゴーレムのARポスター（印刷用）
+- `tsubamei-marker.html` … つばめいのARポスター（A4縦で印刷用）
 - `qr.html` … 入口に貼るQRコード（印刷用）
 - `model.html` … つばめいの3Dモデルを回して見る（ポーズを選んで止められる）
 
 ## バージョン
 
-タイトル画面の下に `ver 0.10.1（2026.10.06）` のように表示する。更新を公開するたびに `js/common/version.js` の `VERSION` と `RELEASED` を上げる（大きな作り直し＝1つ目、機能の追加＝2つ目、修正だけ＝3つ目）。当日、端末に古い画面が残っていないかの確認に使う。
+タイトル画面の下に `ver 0.11.0（2026.10.06）` のように表示する。更新を公開するたびに `js/common/version.js` の `VERSION` と `RELEASED` を上げる（大きな作り直し＝1つ目、機能の追加＝2つ目、修正だけ＝3つ目）。当日、端末に古い画面が残っていないかの確認に使う。
 
 ## 公開方法（GitHub Pages）
 
@@ -74,7 +75,7 @@ URLの末尾に `?camera=user`（イン）または `?camera=environment`（ア�
 ## 構成
 
 ```
-index.html / photo.html / ar.html / marker.html / qr.html   各ページ
+index.html / photo.html / ar.html / marker.html / tsubamei-marker.html / qr.html   各ページ
 
 js/pages/        ページごとの処理
   index.js         タイトル画面（バージョン表示）
@@ -107,7 +108,10 @@ assets/dungeon-hall.jpg  大広間の背景（参考画像のゴーレムがい�
 assets/castle.jpg        魔法陣の間の背景（AI生成画像の天井部分を切り落としたもの）
 assets/magic-lines.png   魔法陣の線だけを抜き出した発光用マスク
 assets/battle.jpg        戦闘画面の背景（AI生成）
-assets/targets.mind      ポスター認識データ（MindARで作成）
+assets/targets.mind      ゴーレムのポスター認識データ（MindARで作成）
+assets/tsubamei-poster.png  つばめいのARポスター（tools/make_tsubamei_poster.py で作成）
+assets/tsubamei-target.jpg  つばめいのポスターを縮小した、認識データ作成用の画像
+assets/tsubamei.mind        つばめいのポスター認識データ
 assets/tsubamei/         つばめいの3Dモデル（tools/build_tsubamei.py で作成）
 tools/build_tsubamei.py  イラストから3Dモデルを作るスクリプト
 つばめい/                つばめいの元イラスト（ページからは読み込まない）
@@ -124,3 +128,9 @@ tools/build_tsubamei.py  イラストから3Dモデルを作るスクリプト
 ## ポスター画像を差し替える場合
 
 `assets/targets.mind` は画像から作る認識データなので、ポスター画像を変えたら作り直す必要がある。MindAR の公式コンパイラ（https://hiukim.github.io/mind-ar-js-doc/tools/compile ）に新しい画像をアップロードし、出力された `targets.mind` を `assets/` に置く。あわせて `js/pages/ar.js` の `TARGET_ASPECT`（高さ÷幅）を新しい画像に合わせる。
+
+## つばめいのポスターを作り直す場合
+
+1. `.venv` の Python で `python tools/make_tsubamei_poster.py` を実行する（`assets/tsubamei-poster.png` と `assets/tsubamei-target.jpg` ができる。模様の配置は毎回同じ）
+2. `assets/tsubamei-target.jpg` から認識データを作り、`assets/tsubamei.mind` に置く（MindAR の公式コンパイラ、またはブラウザで `MINDAR.IMAGE.Compiler` を使う）
+3. 縦横比を変えたときは `js/pages/ar.js` の `POSTERS.tsubamei.aspect` を合わせる

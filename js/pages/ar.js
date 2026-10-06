@@ -41,12 +41,19 @@ for (const key of ['posterWidth', 'posterBottom']) {
   ui[key].addEventListener('change', () => save(key, ui[key].value));
 }
 
-// ポスター画像の縦横比（幅を1としたときの高さ）
-const TARGET_ASPECT = 1024 / 1536;
+// キャラごとのポスター（認識データと、縦横比＝幅を1としたときの高さ）
+//   ゴーレム：ダンジョンの絵（marker.html）、つばめい：つばめいのポスター（tsubamei-marker.html）
+const POSTERS = {
+  golem: { mind: 'assets/targets.mind', aspect: 1024 / 1536 },
+  tsubamei: { mind: 'assets/tsubamei.mind', aspect: 1754 / 1240 },
+};
+const poster = POSTERS[ui.chara.value];
+if (ui.chara.value === 'tsubamei') $('status').innerHTML = 'つばめいのポスターを<br>カメラにうつしてください';
+const TARGET_ASPECT = poster.aspect;
 
 const mindar = new MindARThree({
   container,
-  imageTargetSrc: 'assets/targets.mind',
+  imageTargetSrc: poster.mind,
   uiScanning: 'no',
   uiLoading: 'no',
   uiError: 'no',
@@ -111,7 +118,7 @@ function layout() {
   golem.visible = embers.visible = torch.visible = !t;
 
   // つばめい：1m＝ポスターの横幅の 1/幅(m) 倍。かべに貼ったときは床まで下げ、少し手前に立たせる
-  const perMeter = 100 / Math.max(10, parseFloat(ui.posterWidth.value) || 40);
+  const perMeter = 100 / Math.max(10, parseFloat(ui.posterWidth.value) || 21);
   const wall = ui.mount.value === 'wall';
   const bottom = (parseFloat(ui.posterBottom.value) || 0) / 100;
   tsubamei.visible = t;
@@ -123,13 +130,11 @@ function layout() {
   $('attack').textContent = t ? 'ポーズ' : 'こうげき';
 }
 for (const el of [ui.size, ui.offsetX, ui.mount, ui.chest, ui.posterWidth, ui.posterBottom]) el.addEventListener('input', layout);
+// キャラを変えると、うつすポスターも変わるので、そのキャラのページを開きなおす
 ui.chara.addEventListener('change', () => {
-  layout();
-  if (!everFound) return;
-  activeModel().userData.appear();
-  play('summon');
-  msgIndex = 0;
-  say(fillMessage(messageList()[0], playerName()));
+  const url = new URL(location.href);
+  url.searchParams.set('chara', ui.chara.value);
+  location.replace(url.href);
 });
 layout();
 
