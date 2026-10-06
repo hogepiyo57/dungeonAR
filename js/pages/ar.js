@@ -24,16 +24,9 @@ const charaParam = new URLSearchParams(location.search).get('chara');
 if (charaParam === 'tsubamei') ui.chara.value = 'tsubamei';
 const isTsubamei = () => ui.chara.value === 'tsubamei';
 
-// つばめいのセリフ（ポーズに合わせる）
-const TSUBAMEI_MESSAGES = {
-  appear: 'つばめいが あらわれた！',
-  stand: 'つばめいは {name}を じっと みている',
-  wave: 'つばめいが {name}に てを ふっている！',
-  banzai: 'つばめいは うれしそうに はねを ひろげた！',
-  shy: 'つばめいは ちょっぴり てれている…',
-  fly: 'つばめいは そらへ まいあがった！',
-};
-const messageList = () => (isTsubamei() ? Object.values(TSUBAMEI_MESSAGES) : MESSAGES);
+// つばめいはダンジョンとは別の企画。セリフ・RPGウィンドウ・登場の演出・動きのボタンはなく、
+// ポスターをうつすと現れるだけ（ポーズは一定の間隔でひとりでに変わる）
+const messageList = () => MESSAGES;
 
 // ポスターの大きさ・高さは係が一度入れたら端末に記憶する
 for (const key of ['posterWidth', 'posterBottom', 'tsubameiHeight', 'tsubameiStand']) {
@@ -134,7 +127,6 @@ function layout() {
   hemi.color.set(t ? 0xffffff : 0x9fb0ff);
   hemi.groundColor.set(t ? 0x807080 : 0x3a2414);
   sun.color.set(t ? 0xffffff : 0xffd0a0);
-  $('attack').textContent = t ? 'ポーズ' : 'こうげき';
 }
 for (const el of [ui.size, ui.offsetX, ui.mount, ui.chest, ui.posterWidth, ui.posterBottom, ui.tsubameiHeight, ui.tsubameiStand]) el.addEventListener('input', layout);
 // キャラを変えると、うつすポスターも変わるので、そのキャラのページを開きなおす
@@ -171,10 +163,11 @@ anchor.onTargetFound = () => {
   if (!everFound) {
     everFound = true;
     world.visible = true;
-    activeModel().userData.appear();
+    $('shoot').disabled = false;
+    if (isTsubamei()) return;
+    golem.userData.appear();
     play('summon');
     say(fillMessage(messageList()[0], playerName()));
-    $('shoot').disabled = false;
   }
 };
 
@@ -225,6 +218,7 @@ function capture() {
   ctx.drawImage(renderer.domElement, 0, 0, out.width, out.height);
   ctx.restore();
 
+  if (isTsubamei()) return out; // つばめいは写真にウィンドウ・スタンプを入れない
   if (ui.hud.checked) {
     drawRpgHud(ctx, out.width, out.height, {
       name: playerName(),
@@ -260,13 +254,6 @@ $('shoot').addEventListener('click', async () => {
 
 $('attack').addEventListener('click', () => {
   if (!everFound) return;
-  if (isTsubamei()) {
-    // つばめい：すぐに次のポーズへ
-    const pose = tsubamei.userData.nextPose();
-    play('select');
-    say(fillMessage(TSUBAMEI_MESSAGES[pose], playerName()));
-    return;
-  }
   golem.userData.attack();
   play('swing');
   say(fillMessage(MESSAGES[2], playerName()));

@@ -52,7 +52,7 @@
 </div>
 
 <div class="win settings" id="settings" hidden>
-  <label class="field">なまえ
+  <label class="field golem-only">なまえ
     <input type="text" id="name" maxlength="8" placeholder="ゆうしゃ">
   </label>
   <label class="field">よびだす キャラ
@@ -97,7 +97,7 @@
   </label>
   <div class="toggles">
     <label class="golem-only"><input type="checkbox" id="chest" checked> 宝箱</label>
-    <label><input type="checkbox" id="hud" checked> RPGウィンドウ</label>
+    <label class="golem-only"><input type="checkbox" id="hud" checked> RPGウィンドウ</label>
     <label><input type="checkbox" id="sound" checked> おと</label>
   </div>
 </div>
@@ -106,9 +106,9 @@
 <div class="win msg" id="msg" hidden></div>
 
 <div class="hud bottom">
-  <button class="btn" id="attack" type="button">こうげき</button>
+  <button class="btn golem-only" id="attack" type="button">こうげき</button>
   <button class="shutter" id="shoot" type="button" aria-label="撮影" disabled></button>
-  <button class="btn" id="msgNext" type="button">セリフ</button>
+  <button class="btn golem-only" id="msgNext" type="button">セリフ</button>
 </div>
 
 <div class="overlay-msg" id="loading">
