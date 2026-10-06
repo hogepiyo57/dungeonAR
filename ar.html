@@ -36,7 +36,7 @@
   .toggles label { display: flex; align-items: center; gap: 6px; }
   .settings input[type="number"] { font: inherit; font-size: 16px; color: var(--text); background: #111; border: 2px solid #666; border-radius: 6px; padding: 6px 8px; width: 100%; }
   /* キャラ・ポスターの場所ごとに使う設定だけを出す */
-  body[data-chara="golem"] .tsubamei-only, body[data-chara="tsubamei"] .golem-only, body[data-mount="floor"] .wall-only { display: none; }
+  body[data-chara="golem"] .tsubamei-only, body[data-chara="tsubamei"] .golem-only, body[data-mount="floor"] .wall-only, body:not([data-stand="floor"]) .floor-only { display: none; }
 </style>
 </head>
 <body>
@@ -76,7 +76,13 @@
   <label class="field tsubamei-only">印刷したポスターの横幅（cm。A4縦＝21、A3縦＝29.7）
     <input type="number" id="posterWidth" min="10" max="200" step="1" value="21" inputmode="numeric">
   </label>
-  <label class="field tsubamei-only wall-only">ポスターの下のふちの高さ（床から cm）
+  <label class="field tsubamei-only wall-only">つばめいの立つ場所
+    <select id="tsubameiStand">
+      <option value="poster" selected>ポスターの下のふち</option>
+      <option value="floor">床（ポスターの高さを入れる）</option>
+    </select>
+  </label>
+  <label class="field tsubamei-only wall-only floor-only">ポスターの下のふちの高さ（床から cm）
     <input type="number" id="posterBottom" min="0" max="250" step="1" value="100" inputmode="numeric">
   </label>
   <label class="field">左右の位置

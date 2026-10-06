@@ -16,6 +16,7 @@ const ui = {
   name: $('name'), mount: $('mount'), size: $('size'), offsetX: $('offsetX'),
   timer: $('timer'), chest: $('chest'), hud: $('hud'),
   chara: $('chara'), posterWidth: $('posterWidth'), posterBottom: $('posterBottom'), tsubameiHeight: $('tsubameiHeight'),
+  tsubameiStand: $('tsubameiStand'),
 };
 
 // よびだすキャラ：URLの ?chara=tsubamei で最初から選べる
@@ -35,7 +36,7 @@ const TSUBAMEI_MESSAGES = {
 const messageList = () => (isTsubamei() ? Object.values(TSUBAMEI_MESSAGES) : MESSAGES);
 
 // ポスターの大きさ・高さは係が一度入れたら端末に記憶する
-for (const key of ['posterWidth', 'posterBottom', 'tsubameiHeight']) {
+for (const key of ['posterWidth', 'posterBottom', 'tsubameiHeight', 'tsubameiStand']) {
   const v = load(key);
   if (v) ui[key].value = v;
   ui[key].addEventListener('change', () => save(key, ui[key].value));
@@ -117,22 +118,25 @@ function layout() {
   torch.position.set(ox - s * 0.8, s * 1.4, s * 0.8);
   golem.visible = embers.visible = torch.visible = !t;
 
-  // つばめい：1m＝ポスターの横幅の 1/幅(m) 倍。かべに貼ったときは床まで下げ、少し手前に立たせる
+  // つばめい：1m＝ポスターの横幅の 1/幅(m) 倍。かべに貼ったときは、ふだんはポスターの下のふちに立たせる
+  // （ポスターをうつしたまま画面に入る）。「床」を選んだときだけ、入力した高さぶん床まで下げて手前に立たせる
   const perMeter = 100 / Math.max(10, parseFloat(ui.posterWidth.value) || 21);
   const wall = ui.mount.value === 'wall';
-  const bottom = (parseFloat(ui.posterBottom.value) || 0) / 100;
+  const onFloor = wall && ui.tsubameiStand.value === 'floor';
+  document.body.dataset.stand = ui.tsubameiStand.value;
+  const bottom = onFloor ? (parseFloat(ui.posterBottom.value) || 0) / 100 : 0;
   tsubamei.visible = t;
   // モデルは高さ 1.2m。設定の「つばめいの大きさ」（cm）に合わせて縮める
   const height = Math.max(10, parseFloat(ui.tsubameiHeight.value) || 40) / 100;
   $('tsubameiHeightValue').textContent = `${Math.round(height * 100)}cm`;
   tsubamei.scale.setScalar(perMeter * height / TSUBAMEI_HEIGHT);
-  tsubamei.position.set(ox, wall ? -bottom * perMeter : 0, wall ? 0.3 * perMeter : 0);
+  tsubamei.position.set(ox, -bottom * perMeter, wall ? (onFloor ? 0.3 : 0.05) * perMeter : 0);
   hemi.color.set(t ? 0xffffff : 0x9fb0ff);
   hemi.groundColor.set(t ? 0x807080 : 0x3a2414);
   sun.color.set(t ? 0xffffff : 0xffd0a0);
   $('attack').textContent = t ? 'ポーズ' : 'こうげき';
 }
-for (const el of [ui.size, ui.offsetX, ui.mount, ui.chest, ui.posterWidth, ui.posterBottom, ui.tsubameiHeight]) el.addEventListener('input', layout);
+for (const el of [ui.size, ui.offsetX, ui.mount, ui.chest, ui.posterWidth, ui.posterBottom, ui.tsubameiHeight, ui.tsubameiStand]) el.addEventListener('input', layout);
 // キャラを変えると、うつすポスターも変わるので、そのキャラのページを開きなおす
 ui.chara.addEventListener('change', () => {
   const url = new URL(location.href);
