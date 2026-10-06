@@ -114,7 +114,7 @@ def main():
 
     # 見出し
     d.rounded_rectangle([90, 80, W - 90, 300], radius=40, fill=PURPLE, outline=DARK, width=8)
-    text(d, (W / 2, 160), 'つばめ祭 マスコット', 64, CREAM)
+    text(d, (W / 2, 160), '清明高校 マスコット', 64, CREAM)
     text(d, (W / 2, 245), 'つばめい', 104, YELLOW, stroke=8, stroke_fill=DARK)
 
     # まん中に正面のつばめい、まわりにいろいろなポーズ
