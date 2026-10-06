@@ -11,6 +11,7 @@ const BASE = new URL('../../assets/tsubamei/', import.meta.url);
 const POSE_HOLD = 3.6;  // 1つのポーズを続ける秒数
 const POSE_BLEND = 0.7; // 次のポーズへ移り変わる秒数
 const POSE_ORDER = ['stand', 'wave', 'banzai', 'shy', 'fly'];
+const SPREAD_FOLD = 1.4; // 広げた羽を、たたんだ羽と入れかえるときにたたむ角度
 
 // ---------- 読み込み（ページ内で1回だけ） ----------
 let assetsPromise = null;
@@ -135,6 +136,8 @@ export function createTsubamei({ shadow = true } = {}) {
       nodes[part.name] = node;
     }
     for (const part of meta.parts) nodes[part.parent].add(nodes[part.name]);
+    // 広げた羽（絵 1 から作った部品）は、羽を広げるポーズのときだけ出す
+    nodes.spreadL.visible = nodes.spreadR.visible = false;
     root.userData.version = meta.version;
     root.userData.update(0);
   });
@@ -166,13 +169,15 @@ export function createTsubamei({ shadow = true } = {}) {
       by: Math.sin(t * 2.2) * 0.006, headY: Math.sin(t * 0.6) * 0.1, headZ: Math.sin(t * 0.9) * 0.04,
       lRaise: Math.sin(t * 2.2) * 0.03, rRaise: Math.sin(t * 2.2) * 0.03,
     }),
+    // 羽を広げるポーズ（手をふる・ばんざい・とぶ）は、絵 1 の広げた羽に入れかえる（spread＝1）。flap＝広げた羽の上下
     wave: (t) => ({
       by: Math.sin(t * 2.2) * 0.006, headZ: -0.1, headY: 0.08,
-      rRaise: 2.5 + Math.sin(t * 9) * 0.3, rFwd: 0.2,
+      rRaise: 2.5, rFwd: 0.2, rSpread: 1, rFlap: 0.05 + Math.sin(t * 9) * 0.25,
     }),
     banzai: (t) => ({
       by: Math.abs(Math.sin(t * 5)) * 0.045, headX: -0.08, happy: 1,
-      lRaise: 2.2 + Math.sin(t * 10) * 0.12, rRaise: 2.2 + Math.sin(t * 10) * 0.12, lFwd: 0.15, rFwd: 0.15,
+      lRaise: 2.2, rRaise: 2.2, lSpread: 1, rSpread: 1,
+      lFlap: Math.sin(t * 10) * 0.1, rFlap: Math.sin(t * 10) * 0.1,
     }),
     shy: (t) => ({
       by: Math.sin(t * 2) * 0.005, roll: 0.05 + Math.sin(t * 2) * 0.04, headZ: 0.2, headY: 0.2, headX: 0.08,
@@ -180,10 +185,12 @@ export function createTsubamei({ shadow = true } = {}) {
     }),
     fly: (t, dir) => ({
       by: 0.14 + Math.sin(t * 4.5) * 0.03, yaw: dir * 1.2, pitch: 0.3, headX: -0.22, legs: 0.7,
-      lRaise: 1.45 + Math.sin(t * 11) * 0.5, rRaise: 1.45 + Math.sin(t * 11) * 0.5, lTwist: 1.0, rTwist: 1.0,
+      lRaise: 1.45, rRaise: 1.45, lTwist: 1.0, rTwist: 1.0,
+      lSpread: 1, rSpread: 1, lFlap: Math.sin(t * 11) * 0.45, rFlap: Math.sin(t * 11) * 0.45,
     }),
   };
-  const KEYS = ['by', 'yaw', 'pitch', 'roll', 'headX', 'headY', 'headZ', 'lRaise', 'lFwd', 'lTwist', 'rRaise', 'rFwd', 'rTwist', 'legs', 'happy'];
+  const KEYS = ['by', 'yaw', 'pitch', 'roll', 'headX', 'headY', 'headZ', 'lRaise', 'lFwd', 'lTwist', 'rRaise', 'rFwd', 'rTwist',
+    'lSpread', 'rSpread', 'lFlap', 'rFlap', 'legs', 'happy'];
   const evalPose = (p, t) => {
     const v = POSES[p.name](t, p.dir);
     for (const k of KEYS) v[k] = v[k] || 0;
@@ -251,6 +258,17 @@ export function createTsubamei({ shadow = true } = {}) {
     head.rotation.set(v.headX, v.headY, v.headZ);
     wingL.rotation.set(-v.lFwd, -v.lTwist, -v.lRaise);
     wingR.rotation.set(-v.rFwd, v.rTwist, v.rRaise);
+    // たたんだ羽が半分まで上がったら、広げた羽に入れかえる。広げた羽は肩を中心に、たたんだ角度から開く
+    for (const [side, hang, spread, s, flap, twist] of [
+      [-1, wingL, nodes.spreadL, v.lSpread, v.lFlap, v.lTwist],
+      [1, wingR, nodes.spreadR, v.rSpread, v.rFlap, v.rTwist],
+    ]) {
+      const open = s >= 0.5;
+      hang.visible = !open;
+      spread.visible = open;
+      spread.rotation.set(0, side * twist, side * (flap - (1 - s) * SPREAD_FOLD));
+      spread.scale.setScalar(0.75 + 0.25 * s);
+    }
     footL.rotation.x = footR.rotation.x = v.legs;
 
     // 目：うれしい顔と、ときどきまばたき

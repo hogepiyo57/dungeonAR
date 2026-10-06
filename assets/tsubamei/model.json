@@ -1,10 +1,10 @@
 {
- "version": 1,
+ "version": 2,
  "source": "つばめい (2).PNG",
  "height": 1.2,
  "atlas": [
   1024,
-  1024
+  2048
  ],
  "colors": {
   "purple": "#9068a0",
@@ -163,19 +163,19 @@
   {
    "name": "tailL",
    "parent": "body",
-   "vertexCount": 732,
-   "frontIndexCount": 2190,
-   "indexCount": 4380,
+   "vertexCount": 1064,
+   "frontIndexCount": 3186,
+   "indexCount": 6372,
    "position": 688576,
-   "uv": 697360,
-   "index": 703216,
+   "uv": 701344,
+   "index": 709856,
    "position0": [
     -0.11481913652275379,
     -0.19463243873978997,
     -0.14702033457103045
    ],
    "rotation0": [
-    0.6108652381980153,
+    1.2487614190339404,
     0.0,
     -1.7090811729888644
    ]
@@ -183,19 +183,19 @@
   {
    "name": "tailR",
    "parent": "body",
-   "vertexCount": 732,
-   "frontIndexCount": 2190,
-   "indexCount": 4380,
-   "position": 711976,
-   "uv": 720760,
-   "index": 726616,
+   "vertexCount": 1064,
+   "frontIndexCount": 3186,
+   "indexCount": 6372,
+   "position": 722600,
+   "uv": 735368,
+   "index": 743880,
    "position0": [
     0.11481913652275379,
     -0.19463243873978997,
     -0.14644516208356373
    ],
    "rotation0": [
-    0.6108652381980153,
+    1.2487614190339404,
     0.0,
     -1.432511480600929
    ]
@@ -206,9 +206,9 @@
    "vertexCount": 106,
    "frontIndexCount": 312,
    "indexCount": 624,
-   "position": 735376,
-   "uv": 736648,
-   "index": 737496,
+   "position": 756624,
+   "uv": 757896,
+   "index": 758744,
    "position0": [
     0,
     0.44807467911318555,
@@ -219,6 +219,38 @@
     1.5707963267948966,
     0.5
    ]
+  },
+  {
+   "name": "spreadL",
+   "parent": "body",
+   "vertexCount": 2618,
+   "frontIndexCount": 7854,
+   "indexCount": 15708,
+   "position": 759992,
+   "uv": 791408,
+   "index": 812352,
+   "position0": [
+    -0.25420247788297123,
+    0.2534422403733956,
+    -0.012
+   ],
+   "spreadOf": "wingL"
+  },
+  {
+   "name": "spreadR",
+   "parent": "body",
+   "vertexCount": 2656,
+   "frontIndexCount": 7968,
+   "indexCount": 15936,
+   "position": 843768,
+   "uv": 875640,
+   "index": 896888,
+   "position0": [
+    0.24644900684580573,
+    0.2534422403733956,
+    -0.012
+   ],
+   "spreadOf": "wingR"
   }
  ],
  "pivotHeight": {

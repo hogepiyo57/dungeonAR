@@ -22,8 +22,10 @@ from scipy.spatial import ConvexHull
 
 ROOT = Path(__file__).resolve().parent.parent
 SRC = ROOT / 'つばめい' / 'つばめい (2).PNG'
+SRC_SPREAD = ROOT / 'つばめい' / 'つばめい (1).png'  # 羽を広げた絵（ばんざい）。広げた羽の部品をここから作る
+SPREAD_ROOT_IN = 40  # 広げた羽の根もとを、肩から体の内側へ入れる量（絵 1 の px）
 OUT = ROOT / 'assets' / 'tsubamei'
-MODEL_VERSION = 1  # モデルの版。形を変えたら上げる（git のタグ tsubamei-v<番号> で戻せる）
+MODEL_VERSION = 2  # モデルの版。形を変えたら上げる（git のタグ tsubamei-v<番号> で戻せる）
 HEIGHT_M = 1.2   # とさかの先〜足の裏
 GRID = 6         # 頂点の間隔（px）
 
@@ -44,16 +46,18 @@ LINE = np.array((24, 14, 24), np.float32)
 ORDER = ['crest', 'beak', 'head', 'shorts', 'wingL', 'wingR', 'footL', 'footR', 'torso']
 PARENT = {'body': None, 'torso': 'body', 'shorts': 'body', 'wingL': 'body', 'wingR': 'body',
           'footL': 'body', 'footR': 'body', 'tailL': 'body', 'tailR': 'body', 'head': 'body',
-          'crest': 'head', 'beak': 'head', 'tuft': 'head'}
+          'crest': 'head', 'beak': 'head', 'tuft': 'head', 'spreadL': 'body', 'spreadR': 'body'}
 BACK_COLOR = {'head': 'purple', 'crest': 'green', 'beak': 'yellow', 'wingL': 'purple', 'wingR': 'purple',
-              'footL': 'yellow', 'footR': 'yellow', 'torso': 'white', 'shorts': 'shorts', 'tailL': 'purple', 'tailR': 'purple', 'tuft': 'purple'}
+              'footL': 'yellow', 'footR': 'yellow', 'torso': 'white', 'shorts': 'shorts', 'tailL': 'purple', 'tailR': 'purple', 'tuft': 'purple',
+              'spreadL': 'purple', 'spreadR': 'purple'}
 # 厚み（前・後ろ）
 #   ROUND の部品：横から見た奥行きを、その高さでの横幅の半分に対する割合で決める（横向きの絵 3・4 に合わせて、
 #                 頭・胴・ズボンは幅と同じくらいの奥行きがある丸い体型）。ふちは半径 ROUND[p] px で丸める
 #   それ以外：輪郭の内接円が球になる厚さを 1 として、内側ほど厚くふくらませる（羽・とさかなど平たいもの）
 DEPTH = {'head': (0.8, 0.78), 'crest': (1.3, 1.3), 'beak': (2.6, 1.6), 'wingL': (1.3, 1.3), 'wingR': (1.3, 1.3),
          'footL': (0.75, 0.75), 'footR': (0.75, 0.75), 'torso': (0.85, 0.8), 'shorts': (0.85, 0.8),
-         'tailL': (0.35, 0.35), 'tailR': (0.35, 0.35), 'tuft': (0.4, 0.4)}
+         'tailL': (0.35, 0.35), 'tailR': (0.35, 0.35), 'tuft': (0.4, 0.4),
+         'spreadL': (0.3, 0.3), 'spreadR': (0.3, 0.3)}
 # 羽も、横から見ると幅の広いへら形（絵 3・4）なので、正面の幅より奥行きを大きくする
 ROUND = {'head': 34, 'torso': 75, 'shorts': 34, 'footL': 14, 'footR': 14, 'wingL': 22, 'wingR': 22}
 # 横を向いた面に絵を貼ると、ふち近くの模様（ほおの E など）が横に長くのびる。
@@ -69,7 +73,9 @@ CREST_TILT = 16  # とさかを後ろへ傾ける角度（横からの線画で�
 # しっぽ：左右のズボンのすそ（後ろ側）を底辺とする三角形が、下・後ろへとがる（後ろからの線画）
 TAIL_BASE = 150   # 底辺の長さ（px）。片足のすその幅くらい
 TAIL_LEN = 175    # 底辺から先までの長さ（px、約 0.25m）
-TAIL_BACK = 35    # 真下から後ろへ傾ける角度
+TAIL_ROOT = 40    # 底辺からズボンの中へうめる長さ（px）
+TAIL_BEND = 65    # 底辺の両はしを、ズボンのすその丸みに沿って体の側へ曲げる量（px）。まっすぐだと両はしにすき間ができる
+TAIL_GROUND = 0.01  # しっぽの先と地面のすき間（m。立ちポーズの体の上下ゆれ 6mm で地面にめりこまない分）。傾きは、先がここまで下がるように付け根の高さから決める
 TAIL_SPLAY = 8    # 外へ開く角度
 FOOT_FORWARD = 110  # 足を前へ出す量（px）
 
@@ -171,7 +177,8 @@ def main():
 
     # 本体の絵にないもの：しっぽ、後頭部のはね（横向きの絵 3・5 に描かれている）
     # しっぽは、底辺がズボンのすそになる三角形。左右で同じ形
-    tail = synth_part([(0, 0), (TAIL_LEN, TAIL_BASE / 2), (0, TAIL_BASE)], 'purple', dst, names)
+    # 底辺（x=TAIL_ROOT）の手前に、ズボンの中にうまる根もとをつける
+    tail = synth_part([(0, 0), (TAIL_ROOT, 0), (TAIL_ROOT + TAIL_LEN, TAIL_BASE / 2), (TAIL_ROOT, TAIL_BASE), (0, TAIL_BASE)], 'purple', dst, names)
     synth = {
         'tailL': tail,
         'tailR': tail,
@@ -264,6 +271,9 @@ def main():
         'footR': px(722, 985),
     }
 
+    # 広げた羽（絵 1 から）。回転の中心はたたんだ羽と同じ肩
+    spread, spread_scale = build_spread_wings(dst, names, pivots, cx, top, scale)
+
     # ---- アトラスに並べる ----
     items = {}
     for p in ORDER:
@@ -273,6 +283,9 @@ def main():
     for p, (m, tex, back) in synth.items():
         h, w = m.shape
         items[p] = (m, tex, back, -PAD, -PAD, w + PAD, h + PAD)
+    for p, (m, tex, back, _pivot) in spread.items():
+        yy, xx = np.where(m)
+        items[p] = (m, tex, back, xx.min() - PAD, yy.min() - PAD, xx.max() + PAD + 1, yy.max() + PAD + 1)
     place, AW, AH = pack({p: (v[5] - v[3], v[6] - v[4]) for p, v in items.items()})
     # すき間は黒にしない（遠くから見たとき、縮小した模様に黒がにじんで継ぎ目に点線が出るため）
     atlas_f = np.empty((AH, AW, 3), np.float32)
@@ -289,15 +302,18 @@ def main():
     blob = bytearray()
     parts_json = []
 
-    def add_part(name, m, h, zfun, pivot, x0, y0, extra=None):
+    def add_part(name, m, h, zfun, pivot, x0, y0, extra=None, s=scale, warp=None):
         ax, ay = place[name]
         pos, uv, idx, nfront = build_mesh(m, h, zfun, DEPTH[name])
-        # px → m（y は上向き、回転の中心からの位置）
-        P = np.stack([(pos[:, 0] - pivot[0]) * scale, -(pos[:, 1] - pivot[1]) * scale, (pos[:, 2] - pivot[2]) * scale], 1)
-        ux = pos[:, 0].copy()
+        uvpos = pos.copy()  # 絵の位置は曲げる前の形で決める
+        if warp:
+            pos = warp(pos)
+        # px → m（y は上向き、回転の中心からの位置）。s は元の絵の 1px の長さ
+        P = np.stack([(pos[:, 0] - pivot[0]) * s, -(pos[:, 1] - pivot[1]) * s, (pos[:, 2] - pivot[2]) * s], 1)
+        ux = uvpos[:, 0].copy()
         if name in rows:
-            ux = wrap_u(ux, pos[:, 1], *rows[name], WRAP_ROWS.get(name))
-        UV = np.stack([(ux - x0 + ax) / AW, 1 - (pos[:, 1] - y0 + ay) / AH], 1)
+            ux = wrap_u(ux, uvpos[:, 1], *rows[name], WRAP_ROWS.get(name))
+        UV = np.stack([(ux - x0 + ax) / AW, 1 - (uvpos[:, 1] - y0 + ay) / AH], 1)
         rec = {'name': name, 'parent': PARENT[name], 'vertexCount': len(P), 'frontIndexCount': nfront, 'indexCount': len(idx)}
         for key, arr, typ in (('position', P, np.float32), ('uv', UV, np.float32), ('index', idx, np.uint16)):
             while len(blob) % 4:
@@ -324,13 +340,25 @@ def main():
         hem = int(np.where(masks['shorts'][:, col])[0].max())
         y = hem - 8
         z = float(shorts_backz[hem - 25, col]) + 14  # すその後ろの面に、底辺を少しうめる
-        synth_place.append((name, [(fx - cx) * scale, -(y - 845) * scale, z * scale], tail_rotation(side)))
+        base_h = (bottom - y) * scale  # 付け根（すそ）の地面からの高さ
+        synth_place.append((name, [(fx - cx) * scale, -(y - 845) * scale, z * scale], tail_rotation(side, base_h, TAIL_LEN * scale)))
     head_back = float((z0['head'] - DEPTH['head'][1] * hf['head'])[340, int(cx)])
     synth_place.append(('tuft', [0, -(330 - 650) * scale, (head_back + 14) * scale], [0, math.pi / 2, 0.5]))
     for name, pos0, rot in synth_place:
         m, tex, back = synth[name]
         hh = height_field_simple(m)
-        add_part(name, m, hh, 0.0, [0, m.shape[0] / 2, 0], -PAD, -PAD, {'position0': pos0, 'rotation0': rot})
+        is_tail = name.startswith('tail')
+        root_x = TAIL_ROOT if is_tail else 0  # しっぽは底辺が回転の中心
+        add_part(name, m, hh, 0.0, [root_x, m.shape[0] / 2, 0], -PAD, -PAD, {'position0': pos0, 'rotation0': rot},
+                 warp=bend_tail if is_tail else None)
+
+    # 広げた羽：ふだんは隠しておき、羽を広げるポーズのときにたたんだ羽と入れかえる
+    for name, hang in (('spreadL', 'wingL'), ('spreadR', 'wingR')):
+        m, tex, back, pivot1 = spread[name]
+        x0, y0 = items[name][3], items[name][4]
+        pos0 = offset(hang, 'body')
+        pos0[2] -= 0.012  # 胴より少し後ろ（絵 1 でも羽は頭と胴の後ろから出ている）
+        add_part(name, m, height_field_simple(m), 0.0, pivot1, x0, y0, {'position0': pos0, 'spreadOf': hang}, s=spread_scale)
 
     # 表情の切りかえ用：目の位置（アトラス上の px）
     eyes = []
@@ -380,9 +408,23 @@ def assign(n, x, y):
     raise ValueError(n)
 
 
-def tail_rotation(side):
+def bend_tail(pos):
+    """しっぽの底辺を、ズボンのすその丸みに合わせて弓なりに曲げる（両はしほど体の側＝根もと側へ寄せる）。
+    先へいくほど曲げを弱め、先は曲げない"""
+    pos = pos.copy()
+    hb = TAIL_BASE / 2
+    across = (pos[:, 1] - hb) / hb                                   # 底辺に沿った位置（-1〜1）
+    along = np.clip((pos[:, 0] - TAIL_ROOT) / TAIL_LEN, 0, 1)        # 底辺 0 → 先 1
+    pos[:, 0] -= TAIL_BEND * across ** 2 * (1 - along) ** 2
+    return pos
+
+
+def tail_rotation(side, base_h, length):
     """しっぽの向き：三角形の先を下・後ろ（少し外）へ、底辺を左右（すそに沿う向き）へ"""
-    a, b = math.radians(TAIL_BACK), math.radians(TAIL_SPLAY)
+    b = math.radians(TAIL_SPLAY)
+    # 先の高さ＝付け根の高さ − 長さ×（下向きの成分）が TAIL_GROUND になる、真下からの傾き a
+    drop = (base_h - TAIL_GROUND) / length * math.sqrt(1 + math.sin(b) ** 2)
+    a = math.acos(max(-1.0, min(1.0, drop)))
     X = np.array([side * math.sin(b), -math.cos(a), -math.sin(a)])  # 底辺→先
     X /= np.linalg.norm(X)
     Y = np.array([1.0, 0, 0]) - X[0] * X  # 底辺の向き
@@ -473,6 +515,58 @@ def hull(m):
 def ellipse(H, W, cx, cy, a, b):
     y, x = np.mgrid[:H, :W]
     return ((x - cx) / a) ** 2 + ((y - cy) / b) ** 2 <= 1
+
+
+def build_spread_wings(dst, names, pivots, cx2, top2, scale2):
+    """羽を広げた絵（1）から、左右の広げた羽（上が紫、下に白い羽根）を切り出す。
+    絵 1 は絵 2 と大きさがちがうので、全体の高さで合わせ、肩（たたんだ羽の回転の中心）の位置を対応させる"""
+    img = np.array(Image.open(SRC_SPREAD).convert('RGBA')).astype(np.float32)
+    H, W = img.shape[:2]
+    rgb, inside = img[..., :3], img[..., 3] > 127
+    ys, _ = np.where(inside)
+    top1, bottom1 = ys.min(), ys.max()
+    scale1 = HEIGHT_M / (bottom1 - top1)
+    k = scale1 / scale2  # 絵 1 の 1px が絵 2 の何 px か
+    cols = np.array([FILLS[n][1] for n in names], np.float32)  # 絵 1 はもともと濃いめの配色
+    dist = np.linalg.norm(rgb[:, :, None, :] - cols[None, None], axis=-1)
+    cls = dist.argmin(-1)
+    fill = inside & (dist.min(-1) < 30)
+    lab_s, _ = ndi.label(fill & (cls == names.index('shorts')))
+    cx1 = np.where(lab_s > 0)[1].mean()  # 体のまん中
+    out = {}
+    for name, hang, side in (('spreadL', 'wingL', -1), ('spreadR', 'wingR', 1)):
+        wf = np.zeros((H, W), bool)
+        for cname in ('purple', 'white'):
+            lab, n = ndi.label(fill & (cls == names.index(cname)))
+            for j in range(1, n + 1):
+                c = lab == j
+                yy, xx = np.where(c)
+                if len(yy) > 5000 and (xx.mean() - cx1) * side > 120:
+                    wf |= c
+        others = fill & ~wf
+        lines = inside & ~fill & (ndi.distance_transform_edt(~wf) <= 5) & (ndi.distance_transform_edt(~others) > 4)
+        own = wf | lines
+        hx, hy = pivots[hang][0], pivots[hang][1]
+        px1, py1 = cx1 + (hx - cx2) / k, top1 + (hy - top2) / k  # 肩の位置（絵 1 の座標）
+        # 頭と胴に隠れている羽の根もとを、肩の中までおぎなう（羽を上げたとき体から離れて見えないように、
+        # 根もとは大きく、肩より体の内側まで入れる）
+        X = np.arange(W)[None, :]
+        root = ellipse(H, W, px1 - side * SPREAD_ROOT_IN, py1, 55, 75) | (own & (np.abs(X - px1) < 90))
+        m = own | hull(root)
+        m = ndi.binary_fill_holes(m)
+        m = ndi.gaussian_filter(m.astype(np.float32), 1.5) > 0.5
+        tex = rgb.copy()
+        core = ndi.binary_erosion(wf, iterations=2)
+        _, (iy, ix) = ndi.distance_transform_edt(~core, return_indices=True)
+        hidden = m & ~own
+        tex[hidden] = rgb[iy[hidden], ix[hidden]]
+        dm = ndi.distance_transform_edt(m)
+        rim = m & (dm <= RIM)
+        _, (jy, jx) = ndi.distance_transform_edt(~((dm > RIM) & core), return_indices=True)
+        tex[rim] = tex[jy[rim], jx[rim]]
+        back = tex.copy()  # 後ろから見ても前と同じ色（上が紫、下に白い羽根）
+        out[name] = (m, tex, back, [px1, py1, 0.0])
+    return out, scale1
 
 
 def synth_part(poly, cname, dst, names, ss=4):
