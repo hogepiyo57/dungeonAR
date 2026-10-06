@@ -58,7 +58,7 @@
   <label class="field">よびだす キャラ
     <select id="chara">
       <option value="golem" selected>ゴーレム</option>
-      <option value="tsubamei">つばめい（1m20cm）</option>
+      <option value="tsubamei">つばめい</option>
     </select>
   </label>
   <label class="field">ポスターの場所
@@ -69,6 +69,9 @@
   </label>
   <label class="field golem-only">ゴーレムの大きさ
     <input type="range" id="size" min="0.2" max="3" step="0.05" value="0.6">
+  </label>
+  <label class="field tsubamei-only">つばめいの大きさ（高さ）：<span id="tsubameiHeightValue">40cm</span>
+    <input type="range" id="tsubameiHeight" min="20" max="120" step="5" value="40">
   </label>
   <label class="field tsubamei-only">印刷したポスターの横幅（cm。A4縦＝21、A3縦＝29.7）
     <input type="number" id="posterWidth" min="10" max="200" step="1" value="21" inputmode="numeric">

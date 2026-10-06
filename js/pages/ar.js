@@ -3,7 +3,7 @@
 import * as THREE from 'three';
 import { MindARThree } from 'mindar-image-three';
 import { createGolem, createChest, createEmbers } from '../models/golem.js';
-import { createTsubamei } from '../models/tsubamei.js';
+import { createTsubamei, TSUBAMEI_HEIGHT } from '../models/tsubamei.js';
 import { MESSAGES, fillMessage, drawRpgHud, drawStamp, ensureFont } from '../common/rpg-ui.js';
 import { countdown, flash, showResult } from '../common/capture.js';
 import { initialFacing, rememberFacing, bindCameraSelect, cameraErrorText, showError } from '../common/camera.js';
@@ -15,7 +15,7 @@ const container = $('ar');
 const ui = {
   name: $('name'), mount: $('mount'), size: $('size'), offsetX: $('offsetX'),
   timer: $('timer'), chest: $('chest'), hud: $('hud'),
-  chara: $('chara'), posterWidth: $('posterWidth'), posterBottom: $('posterBottom'),
+  chara: $('chara'), posterWidth: $('posterWidth'), posterBottom: $('posterBottom'), tsubameiHeight: $('tsubameiHeight'),
 };
 
 // よびだすキャラ：URLの ?chara=tsubamei で最初から選べる
@@ -35,7 +35,7 @@ const TSUBAMEI_MESSAGES = {
 const messageList = () => (isTsubamei() ? Object.values(TSUBAMEI_MESSAGES) : MESSAGES);
 
 // ポスターの大きさ・高さは係が一度入れたら端末に記憶する
-for (const key of ['posterWidth', 'posterBottom']) {
+for (const key of ['posterWidth', 'posterBottom', 'tsubameiHeight']) {
   const v = load(key);
   if (v) ui[key].value = v;
   ui[key].addEventListener('change', () => save(key, ui[key].value));
@@ -122,14 +122,17 @@ function layout() {
   const wall = ui.mount.value === 'wall';
   const bottom = (parseFloat(ui.posterBottom.value) || 0) / 100;
   tsubamei.visible = t;
-  tsubamei.scale.setScalar(perMeter);
+  // モデルは高さ 1.2m。設定の「つばめいの大きさ」（cm）に合わせて縮める
+  const height = Math.max(10, parseFloat(ui.tsubameiHeight.value) || 40) / 100;
+  $('tsubameiHeightValue').textContent = `${Math.round(height * 100)}cm`;
+  tsubamei.scale.setScalar(perMeter * height / TSUBAMEI_HEIGHT);
   tsubamei.position.set(ox, wall ? -bottom * perMeter : 0, wall ? 0.3 * perMeter : 0);
   hemi.color.set(t ? 0xffffff : 0x9fb0ff);
   hemi.groundColor.set(t ? 0x807080 : 0x3a2414);
   sun.color.set(t ? 0xffffff : 0xffd0a0);
   $('attack').textContent = t ? 'ポーズ' : 'こうげき';
 }
-for (const el of [ui.size, ui.offsetX, ui.mount, ui.chest, ui.posterWidth, ui.posterBottom]) el.addEventListener('input', layout);
+for (const el of [ui.size, ui.offsetX, ui.mount, ui.chest, ui.posterWidth, ui.posterBottom, ui.tsubameiHeight]) el.addEventListener('input', layout);
 // キャラを変えると、うつすポスターも変わるので、そのキャラのページを開きなおす
 ui.chara.addEventListener('change', () => {
   const url = new URL(location.href);
